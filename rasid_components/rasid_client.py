@@ -61,6 +61,46 @@ class RasidClient:
             detail = response.json().get("detail", "Login failed")
             raise Exception(detail)
 
+    def save_cookies(self):
+        """Save session cookies to QSettings."""
+        from qgis.PyQt.QtCore import QSettings
+        settings = QSettings()
+        sessionid = self.session.cookies.get("sessionid_v2", "")
+        csrftoken = self.session.cookies.get("csrftoken_v2", "")
+        if sessionid:
+            settings.setValue("rasid_plugin/sessionid", sessionid)
+        if csrftoken:
+            settings.setValue("rasid_plugin/csrftoken", csrftoken)
+
+    def load_cookies(self):
+        """Load session cookies from QSettings."""
+        from qgis.PyQt.QtCore import QSettings
+        settings = QSettings()
+        sessionid = settings.value("rasid_plugin/sessionid", "")
+        csrftoken = settings.value("rasid_plugin/csrftoken", "")
+        if sessionid:
+            self.session.cookies.set("sessionid_v2", sessionid)
+        if csrftoken:
+            self.session.cookies.set("csrftoken_v2", csrftoken)
+            self.session.headers["X-CSRFToken"] = csrftoken
+        return bool(sessionid and csrftoken)
+
+    def clear_cookies(self):
+        """Clear cookies from session and QSettings."""
+        from qgis.PyQt.QtCore import QSettings
+        settings = QSettings()
+        settings.remove("rasid_plugin/sessionid")
+        settings.remove("rasid_plugin/csrftoken")
+        self.session.cookies.clear()
+
+    def is_authenticated(self):
+        """Test if current session is valid."""
+        try:
+            self.get_profile()
+            return True
+        except:
+            return False
+
     def logout(self):
         """Logout and invalidate session on server."""
         self._ensure_csrf(fetch_if_missing=True)
@@ -74,7 +114,7 @@ class RasidClient:
             # Best effort - still clear session locally even if API call fails
             pass
         finally:
-            self.session.cookies.clear()
+            self.clear_cookies()
 
     def get_profile(self):
         response = self.session.get(

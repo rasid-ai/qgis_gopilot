@@ -238,13 +238,20 @@ class RasidPluginDialog(QDialog):
 
     def do_logout(self):
         from qgis.PyQt.QtCore import QSettings
+        import keyring
+        
         # Logout from API and invalidate server-side session
         if self.client:
             self.client.logout()
         # Clear saved credentials
         settings = QSettings()
+        email = settings.value("rasid_plugin/email", "")
+        if email:
+            try:
+                keyring.delete_password("rasid_plugin", email)
+            except:
+                pass
         settings.remove("rasid_plugin/email")
-        settings.remove("rasid_plugin/password")
         self.reject()
 
     def _fetch_profile(self):

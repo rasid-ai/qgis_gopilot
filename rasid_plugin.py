@@ -31,6 +31,7 @@ from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.rasid_client import RasidClient
 from PyQt5.QtWidgets import QMessageBox, QProgressDialog
 import os.path
+import keyring
 
 
 class LoginThread(QThread):
@@ -149,7 +150,10 @@ class RasidPlugin:
             if self._login_save:
                 settings = QSettings()
                 settings.setValue("rasid_plugin/email", self._login_email)
-                settings.setValue("rasid_plugin/password", self._login_password)
+                # Store password securely in system keychain
+                keyring.set_password("rasid_plugin", self._login_email, self._login_password)
+            # Save session cookies for next time
+            self.client.save_cookies()
             self._show_main_dialog()
 
         def on_failed(msg):
@@ -158,8 +162,13 @@ class RasidPlugin:
             if self._login_save:
                 # Clear invalid saved credentials
                 settings = QSettings()
+                email = settings.value("rasid_plugin/email", "")
+                if email:
+                    try:
+                        keyring.delete_password("rasid_plugin", email)
+                    except:
+                        pass
                 settings.remove("rasid_plugin/email")
-                settings.remove("rasid_plugin/password")
             QMessageBox.critical(self.iface.mainWindow(), "Login Failed", msg)
 
         self._login_thread.success.connect(on_success)
@@ -167,10 +176,24 @@ class RasidPlugin:
         self._login_thread.start()
 
     def run(self):
-        # Check for saved credentials
+        # Try to reuse existing session first
+        self.client = RasidClient()
+        if self.client.load_cookies() and self.client.is_authenticated():
+            # Session still valid, skip login!
+            self._show_main_dialog()
+            return
+
+        # Session invalid or missing - need to login
         settings = QSettings()
         email = settings.value("rasid_plugin/email", "")
-        password = settings.value("rasid_plugin/password", "")
+        password = None
+
+        if email:
+            # Retrieve password from secure keychain
+            try:
+                password = keyring.get_password("rasid_plugin", email)
+            except:
+                password = None
 
         if email and password:
             # Auto-login with saved credentials
