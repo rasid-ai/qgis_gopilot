@@ -3,8 +3,12 @@ from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QWidget, QScrollArea, QFrame, QSplitter,
     QMessageBox, QStackedWidget,
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QTimer
+from qgis.PyQt.QtCore import QThread, pyqtSignal, QTimer
 from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
+from .compat import (
+    Qt_Horizontal, Qt_AlignTop, Qt_AlignCenter, Qt_AlignLeft,
+    Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent
+)
 from .image_loader import load_image
 from .create_process_wizard import CreateProcessWizard
 
@@ -28,7 +32,7 @@ SITUATION_LABELS = {
 def create_trash_icon(size=24, color="#e74c3c"):
     """Create a red trash bin icon."""
     pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.transparent)
+    pixmap.fill(Qt_transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
@@ -202,7 +206,7 @@ class ProcessesPage(QWidget):
 
         # Back button (shown when in wizard view)
         self._back_btn = QPushButton("← Back to Processes")
-        self._back_btn.setCursor(Qt.PointingHandCursor)
+        self._back_btn.setCursor(Qt_PointingHandCursor)
         self._back_btn.setStyleSheet(
             "QPushButton { background: #64748b; color: white; border: none;"
             "border-radius: 4px; padding: 6px 14px; font-weight: bold; }"
@@ -213,7 +217,7 @@ class ProcessesPage(QWidget):
         header_layout.addWidget(self._back_btn)
 
         self._new_process_btn = QPushButton("+ New Process")
-        self._new_process_btn.setCursor(Qt.PointingHandCursor)
+        self._new_process_btn.setCursor(Qt_PointingHandCursor)
         self._new_process_btn.setStyleSheet(
             "QPushButton { background: #00856F; color: white; border: none;"
             "border-radius: 4px; padding: 6px 14px; font-weight: bold; }"
@@ -240,7 +244,7 @@ class ProcessesPage(QWidget):
         layout = QVBoxLayout(self._list_view)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt_Horizontal)
         layout.addWidget(splitter)
 
         # Left: scrollable process list
@@ -257,7 +261,7 @@ class ProcessesPage(QWidget):
         self._list_layout = QVBoxLayout(self._list_inner)
         self._list_layout.setSpacing(4)
         self._list_layout.setContentsMargins(6, 6, 6, 6)
-        self._list_layout.setAlignment(Qt.AlignTop)
+        self._list_layout.setAlignment(Qt_AlignTop)
         self._list_scroll.setWidget(self._list_inner)
 
         splitter.addWidget(left)
@@ -272,7 +276,7 @@ class ProcessesPage(QWidget):
         self._detail_layout = QVBoxLayout(self._detail_widget)
         self._detail_layout.setContentsMargins(12, 12, 12, 12)
         self._detail_layout.setSpacing(8)
-        self._detail_layout.setAlignment(Qt.AlignTop)
+        self._detail_layout.setAlignment(Qt_AlignTop)
         self._detail_scroll.setWidget(self._detail_widget)
 
         self._show_detail_placeholder()
@@ -302,7 +306,7 @@ class ProcessesPage(QWidget):
         self._show_detail_placeholder()
 
         loading = QLabel("Loading processes...")
-        loading.setAlignment(Qt.AlignCenter)
+        loading.setAlignment(Qt_AlignCenter)
         self._list_layout.addWidget(loading)
 
         slug = project.get("slug", "")
@@ -325,7 +329,7 @@ class ProcessesPage(QWidget):
 
         if not processes:
             lbl = QLabel("No processes yet. Click '+ New Process' to create one.")
-            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setAlignment(Qt_AlignCenter)
             lbl.setStyleSheet("color: #888; font-size: 13px;")
             self._list_layout.addWidget(lbl)
             self._stop_auto_refresh()
@@ -381,7 +385,7 @@ class ProcessesPage(QWidget):
     def _on_error(self, msg):
         self._clear_list()
         lbl = QLabel(f"Failed to load processes: {msg}")
-        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setAlignment(Qt_AlignCenter)
         lbl.setWordWrap(True)
         self._list_layout.addWidget(lbl)
         self._stop_auto_refresh()
@@ -433,7 +437,7 @@ class ProcessesPage(QWidget):
     def _create_row(self, proc):
         row = QFrame()
         row.setFrameShape(QFrame.StyledPanel)
-        row.setCursor(Qt.PointingHandCursor)
+        row.setCursor(Qt_PointingHandCursor)
         row.setStyleSheet("""
             QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }
             QFrame:hover { background: #e8f5f3; }
@@ -444,7 +448,7 @@ class ProcessesPage(QWidget):
 
         thumb = QLabel()
         thumb.setFixedSize(LIST_THUMB, LIST_THUMB)
-        thumb.setAlignment(Qt.AlignCenter)
+        thumb.setAlignment(Qt_AlignCenter)
         thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
         load_image(self.client, proc.get("thumbnail"), thumb, self._threads,
                    size=(LIST_THUMB, LIST_THUMB))
@@ -464,13 +468,13 @@ class ProcessesPage(QWidget):
             f"color: white; background: {color}; border-radius: 3px;"
             "padding: 1px 6px; font-size: 9px; border: none;"
         )
-        info.addWidget(badge, alignment=Qt.AlignLeft)
+        info.addWidget(badge, alignment=Qt_AlignLeft)
         layout.addLayout(info, stretch=1)
 
         hide_btn = QPushButton()
         hide_btn.setIcon(create_trash_icon(20, "#e74c3c"))
         hide_btn.setFixedSize(28, 28)
-        hide_btn.setCursor(Qt.PointingHandCursor)
+        hide_btn.setCursor(Qt_PointingHandCursor)
         hide_btn.setToolTip("Hide process")
         hide_btn.setStyleSheet(
             "QPushButton { background: white; border: 1px solid #ddd;"
@@ -478,7 +482,7 @@ class ProcessesPage(QWidget):
             "QPushButton:hover { background: #fee; border-color: #e74c3c; }"
         )
         hide_btn.clicked.connect(lambda _, p=proc: self._on_hide_process(p))
-        layout.addWidget(hide_btn, alignment=Qt.AlignTop)
+        layout.addWidget(hide_btn, alignment=Qt_AlignTop)
 
         row.mousePressEvent = lambda e, p=proc, r=row: self._on_row_clicked(p, r)
         return row
@@ -503,7 +507,7 @@ class ProcessesPage(QWidget):
 
         self._clear_detail()
         loading = QLabel("Loading details...")
-        loading.setAlignment(Qt.AlignCenter)
+        loading.setAlignment(Qt_AlignCenter)
         loading.setStyleSheet("color: #888; font-size: 13px;")
         self._detail_layout.addWidget(loading)
 
@@ -515,7 +519,7 @@ class ProcessesPage(QWidget):
     def _on_detail_error(self, msg):
         self._clear_detail()
         lbl = QLabel(f"Failed to load detail: {msg}")
-        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setAlignment(Qt_AlignCenter)
         lbl.setStyleSheet("color: #e74c3c; font-size: 12px;")
         self._detail_layout.addWidget(lbl)
 
@@ -524,7 +528,7 @@ class ProcessesPage(QWidget):
     def _show_detail_placeholder(self):
         self._clear_detail()
         lbl = QLabel("Select a process to view details")
-        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setAlignment(Qt_AlignCenter)
         lbl.setStyleSheet("color: #aaa; font-size: 14px;")
         self._detail_layout.addWidget(lbl)
 
@@ -682,11 +686,11 @@ class ProcessesPage(QWidget):
         # Large thumbnail
         thumb = QLabel()
         thumb.setFixedSize(DETAIL_THUMB, DETAIL_THUMB)
-        thumb.setAlignment(Qt.AlignCenter)
+        thumb.setAlignment(Qt_AlignCenter)
         thumb.setStyleSheet("background: #f0f0f0; border-radius: 6px;")
         load_image(self.client, proc.get("thumbnail"), thumb, self._threads,
                    size=(DETAIL_THUMB, DETAIL_THUMB))
-        self._detail_layout.addWidget(thumb, alignment=Qt.AlignCenter)
+        self._detail_layout.addWidget(thumb, alignment=Qt_AlignCenter)
 
         # Save reference to thumbnail for silent updates
         self._detail_thumbnail = thumb
@@ -706,7 +710,7 @@ class ProcessesPage(QWidget):
             f"color: white; background: {color}; border-radius: 4px;"
             "padding: 2px 12px; font-size: 12px; font-weight: bold;"
         )
-        self._detail_layout.addWidget(badge, alignment=Qt.AlignLeft)
+        self._detail_layout.addWidget(badge, alignment=Qt_AlignLeft)
 
         # Save reference to status badge for silent updates
         self._status_badge = badge
@@ -796,7 +800,7 @@ class ProcessesPage(QWidget):
                 vec_btn.setStyleSheet(btn_style.format(bg="#10b981", hover="#10b981"))
             else:
                 vec_btn.setText("Download Result (Shapefile)")
-                vec_btn.setCursor(Qt.PointingHandCursor)
+                vec_btn.setCursor(Qt_PointingHandCursor)
                 vec_btn.setStyleSheet(btn_style.format(bg="#00856F", hover="#009980"))
                 vec_btn.clicked.connect(
                     lambda _, url=result_vector, n=result_layer_name, btn=vec_btn: self._download_and_load(url, n, btn)
@@ -814,7 +818,7 @@ class ProcessesPage(QWidget):
                 ds_btn.setStyleSheet(btn_style.format(bg="#10b981", hover="#10b981"))
             else:
                 ds_btn.setText("Download Dataset (GeoTIFF)")
-                ds_btn.setCursor(Qt.PointingHandCursor)
+                ds_btn.setCursor(Qt_PointingHandCursor)
                 ds_btn.setStyleSheet(btn_style.format(bg="#1E293B", hover="#334155"))
                 ds_btn.clicked.connect(
                     lambda _, url=dataset, n=dataset_layer_name, btn=ds_btn: self._download_and_load(url, n, btn)
@@ -868,8 +872,8 @@ class ProcessesPage(QWidget):
             "This will hide the process. To fully delete it, visit:<br>"
             '<a href="https://app.rasid.ai/hidden-items">https://app.rasid.ai/hidden-items</a>'
         )
-        msg_box.setTextFormat(Qt.RichText)
-        msg_box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg_box.setTextFormat(Qt_RichText)
+        msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
 

@@ -2,7 +2,8 @@ from qgis.PyQt.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit,
     QPushButton, QFrame, QMessageBox
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QThread, pyqtSignal
+from .compat import Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction
 import platform
 
 
@@ -46,13 +47,13 @@ class FeedbackDialog(QDialog):
 
         # Header
         title = QLabel("Provide Feedback")
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt_AlignCenter)
         title.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50;")
         main_layout.addWidget(title)
 
         # Subtitle
         subtitle = QLabel("We value your input to improve the platform.")
-        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle.setAlignment(Qt_AlignCenter)
         subtitle.setStyleSheet("font-size: 12px; color: #7f8c8d; margin-top: -8px;")
         main_layout.addWidget(subtitle)
 
@@ -66,12 +67,12 @@ class FeedbackDialog(QDialog):
         # Star buttons
         stars_layout = QHBoxLayout()
         stars_layout.setSpacing(6)
-        stars_layout.setAlignment(Qt.AlignLeft)
+        stars_layout.setAlignment(Qt_AlignLeft)
 
         for i in range(1, 6):
             star_btn = QPushButton("☆")
             star_btn.setFixedSize(38, 38)
-            star_btn.setCursor(Qt.PointingHandCursor)
+            star_btn.setCursor(Qt_PointingHandCursor)
             star_btn.setProperty("star_value", i)
             star_btn.setStyleSheet("""
                 QPushButton {
@@ -126,7 +127,7 @@ class FeedbackDialog(QDialog):
         btn_layout.addStretch()
 
         cancel_btn = QPushButton("Cancel")
-        cancel_btn.setCursor(Qt.PointingHandCursor)
+        cancel_btn.setCursor(Qt_PointingHandCursor)
         cancel_btn.setStyleSheet("""
             QPushButton {
                 background: transparent;
@@ -144,7 +145,7 @@ class FeedbackDialog(QDialog):
         btn_layout.addWidget(cancel_btn)
 
         self.submit_btn = QPushButton("Submit Feedback")
-        self.submit_btn.setCursor(Qt.PointingHandCursor)
+        self.submit_btn.setCursor(Qt_PointingHandCursor)
         self.submit_btn.setStyleSheet("""
             QPushButton {
                 background: #00856F;
@@ -254,8 +255,8 @@ class FeedbackDialog(QDialog):
             "To view and manage all your feedbacks, visit:<br>"
             '<a href="https://app.rasid.ai/feedback">https://app.rasid.ai/feedback</a>'
         )
-        msg_box.setTextFormat(Qt.RichText)
-        msg_box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg_box.setTextFormat(Qt_RichText)
+        msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
         msg_box.exec_()
 
         self.accept()  # Close dialog

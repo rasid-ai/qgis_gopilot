@@ -1,5 +1,5 @@
 from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
-from qgis.PyQt.QtCore import Qt
+from .compat import Qt_ScrollBarAlwaysOff, Qt_AlignTop, Qt_AlignCenter, Qt_TextBrowserInteraction
 
 
 class AboutPage(QWidget):
@@ -12,13 +12,13 @@ class AboutPage(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # FIX
+        scroll.setHorizontalScrollBarPolicy(Qt_ScrollBarAlwaysOff)  # FIX
         outer.addWidget(scroll)
 
         inner = QWidget()
         layout = QVBoxLayout(inner)
         layout.setContentsMargins(40, 40, 40, 40)
-        layout.setAlignment(Qt.AlignTop)
+        layout.setAlignment(Qt_AlignTop)
         scroll.setWidget(inner)
 
         # Single white card
@@ -39,12 +39,12 @@ class AboutPage(QWidget):
 
         # Title
         title = QLabel("About RASID")
-        title.setAlignment(Qt.AlignCenter)
+        title.setAlignment(Qt_AlignCenter)
         title.setStyleSheet("font-size: 28px; font-weight: bold; color: #2c3e50;")
         card_layout.addWidget(title)
 
         subtitle = QLabel("AI-Powered Earth Observation Platform")
-        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle.setAlignment(Qt_AlignCenter)
         subtitle.setStyleSheet("font-size: 15px; color: #00856F; font-weight: bold; margin-bottom: 16px;")
         card_layout.addWidget(subtitle)
 
@@ -90,9 +90,9 @@ class AboutPage(QWidget):
         link = QLabel(
             'Learn more at <a href="https://rasid.ai" style="color: #00856F; font-weight: bold; text-decoration: none;">rasid.ai</a>'
         )
-        link.setAlignment(Qt.AlignCenter)
+        link.setAlignment(Qt_AlignCenter)
         link.setOpenExternalLinks(True)
-        link.setTextInteractionFlags(Qt.TextBrowserInteraction)  # FIX
+        link.setTextInteractionFlags(Qt_TextBrowserInteraction)  # FIX
         link.setStyleSheet("font-size: 14px; color: #7f8c8d;")
         card_layout.addWidget(link)
 
@@ -109,7 +109,7 @@ class AboutPage(QWidget):
 
         # Version
         version = QLabel("RASID SaaS 2.0.0")
-        version.setAlignment(Qt.AlignCenter)
+        version.setAlignment(Qt_AlignCenter)
         version.setStyleSheet("font-size: 13px; font-weight: bold; color: #2c3e50;")
         card_layout.addWidget(version)
 
@@ -117,15 +117,15 @@ class AboutPage(QWidget):
         tos = QLabel(
             '<a href="https://app.rasid.ai/terms" style="color: #00856F; text-decoration: none;">Terms of Service</a>'
         )
-        tos.setAlignment(Qt.AlignCenter)
+        tos.setAlignment(Qt_AlignCenter)
         tos.setOpenExternalLinks(True)
-        tos.setTextInteractionFlags(Qt.TextBrowserInteraction)  # FIX
+        tos.setTextInteractionFlags(Qt_TextBrowserInteraction)  # FIX
         tos.setStyleSheet("font-size: 12px; color: #7f8c8d;")
         card_layout.addWidget(tos)
 
         # Copyright
         copy_lbl = QLabel("\u00a9 2026 RASID SaaS. All rights reserved.")
-        copy_lbl.setAlignment(Qt.AlignCenter)
+        copy_lbl.setAlignment(Qt_AlignCenter)
         copy_lbl.setStyleSheet("font-size: 11px; color: #7f8c8d;")
         card_layout.addWidget(copy_lbl)
 

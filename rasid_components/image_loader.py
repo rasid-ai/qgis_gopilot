@@ -4,7 +4,8 @@ import os
 
 from qgis.PyQt.QtWidgets import QLabel
 from qgis.PyQt.QtGui import QPixmap
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QThread, pyqtSignal
+from .compat import Qt_KeepAspectRatio, Qt_SmoothTransformation
 
 BASE_URL = "https://api.rasid.ai"
 
@@ -93,9 +94,9 @@ def load_image(client, url, label, threads_list, size=None):
         pm = QPixmap()
         pm.loadFromData(data)
         if size:
-            pm = pm.scaled(size[0], size[1], Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pm = pm.scaled(size[0], size[1], Qt_KeepAspectRatio, Qt_SmoothTransformation)
         else:
-            pm = pm.scaled(lbl.width(), lbl.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pm = pm.scaled(lbl.width(), lbl.height(), Qt_KeepAspectRatio, Qt_SmoothTransformation)
         lbl.setPixmap(pm)
 
     t = FetchImageThread(client.session, url, label)

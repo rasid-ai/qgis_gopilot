@@ -4,8 +4,8 @@ from qgis.PyQt.QtWidgets import (
     QDialog, QLineEdit, QLabel, QPushButton, QVBoxLayout,
     QHBoxLayout, QFrame
 )
-from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QPixmap
+from .compat import Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor
 
 
 class LoginDialog(QDialog):
@@ -33,15 +33,15 @@ class LoginDialog(QDialog):
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(40, 60, 40, 60)
         left_layout.setSpacing(20)
-        left_layout.setAlignment(Qt.AlignCenter)
+        left_layout.setAlignment(Qt_AlignCenter)
 
         # Logo
         logo_label = QLabel()
-        logo_label.setAlignment(Qt.AlignCenter)
+        logo_label.setAlignment(Qt_AlignCenter)
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'icon_nobg.png')
         if os.path.exists(logo_path):
             pm = QPixmap(logo_path)
-            logo_label.setPixmap(pm.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_label.setPixmap(pm.scaled(120, 120, Qt_KeepAspectRatio, Qt_SmoothTransformation))
         else:
             logo_label.setText("RASID")
             logo_label.setStyleSheet("font-size: 32px; font-weight: bold; color: white; background: transparent;")
@@ -49,12 +49,12 @@ class LoginDialog(QDialog):
 
         # Welcome message
         welcome_title = QLabel("Welcome Back")
-        welcome_title.setAlignment(Qt.AlignCenter)
+        welcome_title.setAlignment(Qt_AlignCenter)
         welcome_title.setStyleSheet("font-size: 28px; font-weight: bold; color: white; background: transparent;")
         left_layout.addWidget(welcome_title)
 
         welcome_subtitle = QLabel("Access your geospatial solutions\nand manage your projects")
-        welcome_subtitle.setAlignment(Qt.AlignCenter)
+        welcome_subtitle.setAlignment(Qt_AlignCenter)
         welcome_subtitle.setWordWrap(True)
         welcome_subtitle.setStyleSheet("font-size: 14px; color: rgba(255, 255, 255, 0.9); background: transparent; line-height: 1.6;")
         left_layout.addWidget(welcome_subtitle)
@@ -134,7 +134,7 @@ class LoginDialog(QDialog):
 
         self._eye_btn = QPushButton("👁")
         self._eye_btn.setFixedSize(48, 48)
-        self._eye_btn.setCursor(Qt.PointingHandCursor)
+        self._eye_btn.setCursor(Qt_PointingHandCursor)
         self._eye_btn.setStyleSheet("""
             QPushButton {
                 background: #f7f8fa;
@@ -157,7 +157,7 @@ class LoginDialog(QDialog):
 
         # Login button
         self.login_button = QPushButton("Sign In")
-        self.login_button.setCursor(Qt.PointingHandCursor)
+        self.login_button.setCursor(Qt_PointingHandCursor)
         self.login_button.setStyleSheet("""
             QPushButton {
                 background: #00856F;
@@ -186,7 +186,7 @@ class LoginDialog(QDialog):
             '<a href="https://app.rasid.ai/auth?active_form=register" style="color: #00856F; font-weight: bold; text-decoration: none;">Sign up</a>'
         )
         signup_label.setOpenExternalLinks(True)
-        signup_label.setAlignment(Qt.AlignCenter)
+        signup_label.setAlignment(Qt_AlignCenter)
         signup_label.setStyleSheet("color: #7f8c8d; font-size: 12px;")
         right_layout.addWidget(signup_label)
 

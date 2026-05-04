@@ -7,12 +7,13 @@ from qgis.PyQt.QtWidgets import (
     QButtonGroup, QGroupBox, QTextEdit, QListWidget, QListWidgetItem,
     QScrollArea, QFrame, QSpinBox,
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QDate
+from qgis.PyQt.QtCore import QThread, pyqtSignal, QDate
 from qgis.core import (
     QgsProject, QgsCoordinateReferenceSystem, QgsCoordinateTransform,
     QgsMapLayer,
 )
 from .aoi_tool import AoiDrawTool
+from .compat import Qt_AlignCenter, Qt_PointingHandCursor, Qt_UserRole
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +139,7 @@ class CreateProcessWizard(QWidget):
 
         # Loading state
         self._loading_label = QLabel("Loading process configuration...")
-        self._loading_label.setAlignment(Qt.AlignCenter)
+        self._loading_label.setAlignment(Qt_AlignCenter)
         self._form_layout.addWidget(self._loading_label)
 
         # Bottom button bar
@@ -149,13 +150,13 @@ class CreateProcessWizard(QWidget):
 
         self._submit_btn = QPushButton("Create Process")
         self._submit_btn.setStyleSheet(BTN_STYLE.format(bg="#00856F", hover="#009980"))
-        self._submit_btn.setCursor(Qt.PointingHandCursor)
+        self._submit_btn.setCursor(Qt_PointingHandCursor)
         self._submit_btn.setEnabled(False)
         self._submit_btn.clicked.connect(self._on_submit)
         btn_layout.addWidget(self._submit_btn)
 
         self._cancel_btn = QPushButton("Cancel")
-        self._cancel_btn.setCursor(Qt.PointingHandCursor)
+        self._cancel_btn.setCursor(Qt_PointingHandCursor)
         self._cancel_btn.setStyleSheet(BTN_STYLE.format(bg="#e74c3c", hover="#c0392b"))
         self._cancel_btn.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(self._cancel_btn)
@@ -236,7 +237,7 @@ class CreateProcessWizard(QWidget):
 
         aoi_btn_row = QHBoxLayout()
         self._draw_btn = QPushButton("Draw on Map")
-        self._draw_btn.setCursor(Qt.PointingHandCursor)
+        self._draw_btn.setCursor(Qt_PointingHandCursor)
         self._draw_btn.setStyleSheet(BTN_STYLE.format(bg="#1E293B", hover="#334155"))
         self._draw_btn.clicked.connect(self._start_draw_aoi)
         aoi_btn_row.addWidget(self._draw_btn)
@@ -329,7 +330,7 @@ class CreateProcessWizard(QWidget):
         cat_layout = self._catalogue_group.layout()
 
         self._search_btn = QPushButton("Search Available Imagery")
-        self._search_btn.setCursor(Qt.PointingHandCursor)
+        self._search_btn.setCursor(Qt_PointingHandCursor)
         self._search_btn.setStyleSheet(BTN_STYLE.format(bg="#1E293B", hover="#334155"))
         self._search_btn.clicked.connect(self._on_search_catalogue)
         cat_layout.addWidget(self._search_btn)
@@ -627,7 +628,7 @@ class CreateProcessWizard(QWidget):
             if cloud != "":
                 label += f"  |  Cloud: {cloud}%"
             li = QListWidgetItem(label)
-            li.setData(Qt.UserRole, i)
+            li.setData(Qt_UserRole, i)
             self._catalogue_list.addItem(li)
 
         self._catalogue_list.setCurrentRow(0)
@@ -722,7 +723,7 @@ class CreateProcessWizard(QWidget):
                     payload["sentinel_eval_script"] = eval_script
             selected = self._catalogue_list.currentItem()
             if selected and self._catalogue_results_raw:
-                idx = selected.data(Qt.UserRole)
+                idx = selected.data(Qt_UserRole)
                 if idx is not None and idx < len(self._catalogue_results_raw):
                     payload["sentinel_search_results"] = json.dumps(
                         self._catalogue_results_raw[idx]
@@ -761,7 +762,7 @@ class CreateProcessWizard(QWidget):
             payload["planet_end_date"] = self._end_date.date().toString("yyyy-MM-dd")
             selected = self._catalogue_list.currentItem()
             if selected and self._catalogue_results_raw:
-                idx = selected.data(Qt.UserRole)
+                idx = selected.data(Qt_UserRole)
                 if idx is not None and idx < len(self._catalogue_results_raw):
                     payload["planet_search_results"] = json.dumps(
                         self._catalogue_results_raw[idx]

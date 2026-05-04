@@ -1,6 +1,7 @@
 """Map tool for drawing an AOI polygon on the QGIS canvas."""
-from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QColor
+from .compat import Qt_LeftButton, Qt_RightButton
 from qgis.core import (
     QgsWkbTypes, QgsPointXY, QgsProject,
     QgsCoordinateReferenceSystem, QgsCoordinateTransform,
@@ -21,11 +22,11 @@ class AoiDrawTool(QgsMapTool):
         self._points = []
 
     def canvasPressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt_LeftButton:
             pt = self.toMapCoordinates(event.pos())
             self._points.append(pt)
             self._rb.addPoint(pt, True)
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt_RightButton:
             self._finish()
 
     def _finish(self):

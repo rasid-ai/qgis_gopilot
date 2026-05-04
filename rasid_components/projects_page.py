@@ -2,8 +2,12 @@ from qgis.PyQt.QtWidgets import (
     QLabel, QPushButton, QHBoxLayout,
     QVBoxLayout, QWidget, QScrollArea, QFrame, QMessageBox,
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QThread, pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
+from .compat import (
+    Qt_AlignTop, Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor,
+    Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent
+)
 from .image_loader import load_image
 
 LIST_THUMB = 40
@@ -12,7 +16,7 @@ LIST_THUMB = 40
 def create_trash_icon(size=24, color="#e74c3c"):
     """Create a red trash bin icon."""
     pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.transparent)
+    pixmap.fill(Qt_transparent)
 
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
@@ -98,13 +102,13 @@ class ProjectsPage(QWidget):
         self._list_layout = QVBoxLayout(self._inner)
         self._list_layout.setSpacing(4)
         self._list_layout.setContentsMargins(40, 6, 40, 6)
-        self._list_layout.setAlignment(Qt.AlignTop)
+        self._list_layout.setAlignment(Qt_AlignTop)
         self.scroll.setWidget(self._inner)
 
     def load_projects(self):
         self._clear_list()
         loading = QLabel("Loading projects...")
-        loading.setAlignment(Qt.AlignCenter)
+        loading.setAlignment(Qt_AlignCenter)
         self._list_layout.addWidget(loading)
 
         self._fetch_thread = FetchProjectsThread(self.client)
@@ -116,7 +120,7 @@ class ProjectsPage(QWidget):
         self._clear_list()
         if not projects:
             lbl = QLabel("No projects found.")
-            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setAlignment(Qt_AlignCenter)
             lbl.setStyleSheet("color: #888; font-size: 13px;")
             self._list_layout.addWidget(lbl)
             return
@@ -128,7 +132,7 @@ class ProjectsPage(QWidget):
     def _on_projects_error(self, msg):
         self._clear_list()
         lbl = QLabel(f"Failed to load projects: {msg}")
-        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setAlignment(Qt_AlignCenter)
         lbl.setWordWrap(True)
         self._list_layout.addWidget(lbl)
 
@@ -153,7 +157,7 @@ class ProjectsPage(QWidget):
         # Thumbnail
         thumb = QLabel()
         thumb.setFixedSize(LIST_THUMB, LIST_THUMB)
-        thumb.setAlignment(Qt.AlignCenter)
+        thumb.setAlignment(Qt_AlignCenter)
         thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
         load_image(self.client, proj.get("thumbnail"), thumb, self._threads,
                    size=(LIST_THUMB, LIST_THUMB))
@@ -172,7 +176,7 @@ class ProjectsPage(QWidget):
         if tags:
             tag_row = QHBoxLayout()
             tag_row.setSpacing(4)
-            tag_row.setAlignment(Qt.AlignLeft)
+            tag_row.setAlignment(Qt_AlignLeft)
             for tag in tags[:5]:
                 tag_name = tag.get("name", str(tag)) if isinstance(tag, dict) else str(tag)
                 t = QLabel(tag_name)
@@ -188,21 +192,21 @@ class ProjectsPage(QWidget):
         
         open_btn.setFixedSize(120, 17)
         
-        open_btn.setCursor(Qt.PointingHandCursor)
+        open_btn.setCursor(Qt_PointingHandCursor)
         open_btn.setStyleSheet(
             "QPushButton { background: #00856F; color: white; border: none;"
             "border-radius: 4px; padding: 4px 8px; font-size: 11px;}"
             "QPushButton:hover { background: #009980; }"
         )
         open_btn.clicked.connect(lambda _, p=proj: self.project_opened.emit(p))
-        info.addWidget(open_btn, alignment=Qt.AlignLeft)
+        info.addWidget(open_btn, alignment=Qt_AlignLeft)
 
         layout.addLayout(info, stretch=1)
 
         # Right: hide button
         del_btn = QPushButton()
         del_btn.setIcon(create_trash_icon(20, "#e74c3c"))
-        del_btn.setCursor(Qt.PointingHandCursor)
+        del_btn.setCursor(Qt_PointingHandCursor)
         del_btn.setFixedSize(28, 28)
         del_btn.setStyleSheet(
             "QPushButton { background: white; border: 1px solid #ddd;"
@@ -227,8 +231,8 @@ class ProjectsPage(QWidget):
             "To permanently delete it, visit:<br>"
             '<a href="https://app.rasid.ai/hidden-items">https://app.rasid.ai/hidden-items</a>'
         )
-        msg_box.setTextFormat(Qt.RichText)
-        msg_box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        msg_box.setTextFormat(Qt_RichText)
+        msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
 

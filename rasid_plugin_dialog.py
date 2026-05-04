@@ -7,13 +7,17 @@ from qgis.PyQt.QtWidgets import (
     QPushButton, QFrame,
 )
 from qgis.PyQt.QtGui import QPixmap
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QThread, pyqtSignal
+from .rasid_components.compat import (
+    Qt_WindowMinimizeButtonHint, Qt_WindowMaximizeButtonHint,
+    Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation,
+    Qt_RichText, Qt_TextBrowserInteraction, Qt_PointingHandCursor
+)
 from .rasid_components.solutions_page import SolutionsPage
 from .rasid_components.projects_page import ProjectsPage
 from .rasid_components.processes_page import ProcessesPage
 from .rasid_components.feedback_dialog import FeedbackDialog
 from .rasid_components.about_page import AboutPage
-
 
 SIDEBAR_WIDTH = 190
 
@@ -55,8 +59,8 @@ class RasidPluginDialog(QDialog):
         self.resize(1087, 500)
         self.setWindowFlags(
             self.windowFlags()
-            | Qt.WindowMinimizeButtonHint
-            | Qt.WindowMaximizeButtonHint
+            | Qt_WindowMinimizeButtonHint
+            | Qt_WindowMaximizeButtonHint
         )
         self.client = client
         self.iface = iface
@@ -79,12 +83,12 @@ class RasidPluginDialog(QDialog):
 
         # Logo
         logo_label = QLabel()
-        logo_label.setAlignment(Qt.AlignCenter)
+        logo_label.setAlignment(Qt_AlignCenter)
         logo_label.setFixedHeight(90)
         logo_path = os.path.join(os.path.dirname(__file__), 'logo.png')
         if os.path.exists(logo_path):
             pm = QPixmap(logo_path)
-            logo_label.setPixmap(pm.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_label.setPixmap(pm.scaled(80, 80, Qt_KeepAspectRatio, Qt_SmoothTransformation))
         else:
             logo_label.setText("RASID")
             logo_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #2c3e50;")
@@ -93,23 +97,23 @@ class RasidPluginDialog(QDialog):
         # Welcome + balance (compact)
         self._welcome_label = QLabel("")
         self._welcome_label.setWordWrap(True)
-        self._welcome_label.setAlignment(Qt.AlignCenter)
+        self._welcome_label.setAlignment(Qt_AlignCenter)
         self._welcome_label.setStyleSheet("font-size: 12px; font-weight: bold; color: #2c3e50; margin: 0; padding: 0;")
-        self._welcome_label.setTextFormat(Qt.RichText)
-        self._welcome_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self._welcome_label.setTextFormat(Qt_RichText)
+        self._welcome_label.setTextInteractionFlags(Qt_TextBrowserInteraction)
         self._welcome_label.setOpenExternalLinks(True)
-        self._welcome_label.setCursor(Qt.PointingHandCursor)
+        self._welcome_label.setCursor(Qt_PointingHandCursor)
         sidebar_layout.addWidget(self._welcome_label)
 
         self._balance_label = QLabel("")
-        self._balance_label.setAlignment(Qt.AlignCenter)
+        self._balance_label.setAlignment(Qt_AlignCenter)
         self._balance_label.setStyleSheet(
             "font-size: 11px; color: #00856F; font-weight: bold; margin: 0; padding: 0 0 4px 0;"
         )
-        self._balance_label.setTextFormat(Qt.RichText)
-        self._balance_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self._balance_label.setTextFormat(Qt_RichText)
+        self._balance_label.setTextInteractionFlags(Qt_TextBrowserInteraction)
         self._balance_label.setOpenExternalLinks(True)
-        self._balance_label.setCursor(Qt.PointingHandCursor)
+        self._balance_label.setCursor(Qt_PointingHandCursor)
         sidebar_layout.addWidget(self._balance_label)
 
         # Separator
@@ -126,7 +130,7 @@ class RasidPluginDialog(QDialog):
 
         # Feedback button (opens dialog, not navigation)
         self.btn_feedback = QPushButton("Feedback")
-        self.btn_feedback.setCursor(Qt.PointingHandCursor)
+        self.btn_feedback.setCursor(Qt_PointingHandCursor)
         self.btn_feedback.setStyleSheet(NAV_BTN_STYLE.format(
             bg=NORMAL_BG, fg="#2c3e50", hover=NORMAL_HOVER
         ))
@@ -138,7 +142,7 @@ class RasidPluginDialog(QDialog):
 
         # Logout at bottom
         self.btn_logout = QPushButton("Log Out")
-        self.btn_logout.setCursor(Qt.PointingHandCursor)
+        self.btn_logout.setCursor(Qt_PointingHandCursor)
         self.btn_logout.setStyleSheet(
             "QPushButton { background: transparent; color: #e74c3c; border: 1px solid #e74c3c;"
             "border-radius: 6px; padding: 8px 0; font-size: 12px; font-weight: bold; }"
@@ -181,7 +185,7 @@ class RasidPluginDialog(QDialog):
 
     def _make_nav_btn(self, text, layout):
         btn = QPushButton(text)
-        btn.setCursor(Qt.PointingHandCursor)
+        btn.setCursor(Qt_PointingHandCursor)
         btn.setStyleSheet(NAV_BTN_STYLE.format(
             bg=NORMAL_BG, fg="#2c3e50", hover=NORMAL_HOVER
         ))

@@ -5,7 +5,8 @@ from qgis.PyQt.QtWidgets import (
     QScrollArea, QFrame, QDialog, QLineEdit,
     QMessageBox,
 )
-from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QThread, pyqtSignal
+from .compat import Qt_AlignTop, Qt_AlignHCenter, Qt_AlignCenter, Qt_PlainText, Qt_PointingHandCursor
 from .image_loader import load_image
 
 
@@ -73,13 +74,13 @@ class SolutionsPage(QWidget):
         self._inner = QWidget()
         self.grid = QGridLayout(self._inner)
         self.grid.setSpacing(12)
-        self.grid.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        self.grid.setAlignment(Qt_AlignTop | Qt_AlignHCenter)
         self.scroll.setWidget(self._inner)
 
     def load_solutions(self):
         self._clear_grid()
         loading = QLabel("Loading solutions...")
-        loading.setAlignment(Qt.AlignCenter)
+        loading.setAlignment(Qt_AlignCenter)
         self.grid.addWidget(loading, 0, 0)
 
         self._fetch_thread = FetchSolutionsThread(self.client)
@@ -91,7 +92,7 @@ class SolutionsPage(QWidget):
         self._clear_grid()
         if not solutions:
             lbl = QLabel("No solutions found.")
-            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setAlignment(Qt_AlignCenter)
             self.grid.addWidget(lbl, 0, 0)
             return
 
@@ -113,7 +114,7 @@ class SolutionsPage(QWidget):
     def _on_solutions_error(self, msg):
         self._clear_grid()
         lbl = QLabel(f"Failed to load solutions: {msg}")
-        lbl.setAlignment(Qt.AlignCenter)
+        lbl.setAlignment(Qt_AlignCenter)
         lbl.setWordWrap(True)
         self.grid.addWidget(lbl, 0, 0)
 
@@ -142,15 +143,15 @@ class SolutionsPage(QWidget):
         # Thumbnail
         thumb = QLabel()
         thumb.setFixedSize(THUMB_SIZE, THUMB_SIZE)
-        thumb.setAlignment(Qt.AlignCenter)
+        thumb.setAlignment(Qt_AlignCenter)
         thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
         load_image(self.client, sol.get("image_url"), thumb, self._threads,
                    size=(THUMB_SIZE, THUMB_SIZE))
-        layout.addWidget(thumb, alignment=Qt.AlignCenter)
+        layout.addWidget(thumb, alignment=Qt_AlignCenter)
 
         # Name
         name = QLabel(sol.get("name", "Unnamed"))
-        name.setAlignment(Qt.AlignCenter)
+        name.setAlignment(Qt_AlignCenter)
         name.setWordWrap(True)
         name.setStyleSheet("font-weight: bold; font-size: 13px; border: none;")
         layout.addWidget(name)
@@ -159,7 +160,7 @@ class SolutionsPage(QWidget):
         desc_text = strip_html(sol.get("description_html", ""))
         if desc_text:
             desc = QLabel(desc_text)
-            desc.setTextFormat(Qt.PlainText)
+            desc.setTextFormat(Qt_PlainText)
             desc.setWordWrap(True)
             desc.setMaximumHeight(60)
             desc.setStyleSheet(
@@ -172,7 +173,7 @@ class SolutionsPage(QWidget):
         price = sol.get("euro_per_km2")
         if price is not None:
             price_lbl = QLabel(f"€{price} / km²")
-            price_lbl.setAlignment(Qt.AlignCenter)
+            price_lbl.setAlignment(Qt_AlignCenter)
             price_lbl.setStyleSheet(
                 "color: #009980; font-weight: bold; font-size: 12px; border: none;"
             )
@@ -182,7 +183,7 @@ class SolutionsPage(QWidget):
         status = sol.get("status", "")
         if status == "prod":
             btn = QPushButton("Create Project")
-            btn.setCursor(Qt.PointingHandCursor)
+            btn.setCursor(Qt_PointingHandCursor)
             btn.setStyleSheet("""
                 QPushButton {
                     background: #00856F; color: white;
@@ -194,7 +195,7 @@ class SolutionsPage(QWidget):
             layout.addWidget(btn)
         else:
             badge = QLabel("Coming Soon")
-            badge.setAlignment(Qt.AlignCenter)
+            badge.setAlignment(Qt_AlignCenter)
             badge.setStyleSheet(
                 "background: #F59E0B; color: white; border-radius: 4px;"
                 "padding: 6px; font-weight: bold; font-size: 12px; border: none;"
@@ -261,7 +262,7 @@ class SolutionsPage(QWidget):
         btn_layout.addStretch()
 
         cancel_btn = QPushButton("Cancel")
-        cancel_btn.setCursor(Qt.PointingHandCursor)
+        cancel_btn.setCursor(Qt_PointingHandCursor)
         cancel_btn.setStyleSheet("""
             QPushButton {
                 background: #f7f8fa;
@@ -279,7 +280,7 @@ class SolutionsPage(QWidget):
         btn_layout.addWidget(cancel_btn)
 
         create_btn = QPushButton("Create")
-        create_btn.setCursor(Qt.PointingHandCursor)
+        create_btn.setCursor(Qt_PointingHandCursor)
         create_btn.setStyleSheet("""
             QPushButton {
                 background: #00856F;
