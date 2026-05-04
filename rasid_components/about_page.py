@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
-from PyQt5.QtCore import Qt
+from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
+from qgis.PyQt.QtCore import Qt
 
 
 class AboutPage(QWidget):

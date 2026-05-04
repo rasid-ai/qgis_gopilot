@@ -5,6 +5,7 @@
 [general]
 name=Rasid
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
 description=Run cloud-based geospatial analysis and satellite workflows from Rasid. 
 version=0.1
 author=RASID 

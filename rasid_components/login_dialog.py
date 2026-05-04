@@ -1,11 +1,11 @@
 # login dialog UI
 import os
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtWidgets import (
     QDialog, QLineEdit, QLabel, QPushButton, QVBoxLayout,
     QHBoxLayout, QFrame
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtGui import QPixmap
 
 
 class LoginDialog(QDialog):

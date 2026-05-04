@@ -2,9 +2,9 @@
 import hashlib
 import os
 
-from PyQt5.QtWidgets import QLabel
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtWidgets import QLabel
+from qgis.PyQt.QtGui import QPixmap
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
 
 BASE_URL = "https://api.rasid.ai"
 

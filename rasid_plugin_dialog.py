@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
 
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtWidgets import (
     QDialog,
     QStackedWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QPushButton, QFrame,
 )
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtGui import QPixmap
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
 from .rasid_components.solutions_page import SolutionsPage
 from .rasid_components.projects_page import ProjectsPage
 from .rasid_components.processes_page import ProcessesPage

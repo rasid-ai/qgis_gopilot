@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtWidgets import (
     QLabel, QPushButton, QHBoxLayout,
     QVBoxLayout, QWidget, QScrollArea, QFrame, QMessageBox,
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
 from .image_loader import load_image
 
 LIST_THUMB = 40

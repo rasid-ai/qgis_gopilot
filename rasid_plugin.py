@@ -29,7 +29,7 @@ from .resources import *
 from .rasid_plugin_dialog import RasidPluginDialog
 from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.rasid_client import RasidClient
-from PyQt5.QtWidgets import QMessageBox, QProgressDialog
+from qgis.PyQt.QtWidgets import QMessageBox, QProgressDialog
 import os.path
 import keyring
 

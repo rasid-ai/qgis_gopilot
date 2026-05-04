@@ -1,6 +1,6 @@
 """Map tool for drawing an AOI polygon on the QGIS canvas."""
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QColor
+from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtGui import QColor
 from qgis.core import (
     QgsWkbTypes, QgsPointXY, QgsProject,
     QgsCoordinateReferenceSystem, QgsCoordinateTransform,

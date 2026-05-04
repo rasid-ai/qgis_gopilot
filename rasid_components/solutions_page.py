@@ -1,11 +1,11 @@
 import re
 
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtWidgets import (
     QLabel, QPushButton, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
     QScrollArea, QFrame, QDialog, QLineEdit,
     QMessageBox,
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal
 from .image_loader import load_image
 
 

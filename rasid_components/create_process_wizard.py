@@ -1,13 +1,13 @@
 """Dynamic process creation wizard — embedded as a QWidget page."""
 import json
 
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit,
     QComboBox, QDateEdit, QFileDialog, QWidget, QMessageBox, QRadioButton,
     QButtonGroup, QGroupBox, QTextEdit, QListWidget, QListWidgetItem,
     QScrollArea, QFrame, QSpinBox,
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QDate
+from qgis.PyQt.QtCore import Qt, QThread, pyqtSignal, QDate
 from qgis.core import (
     QgsProject, QgsCoordinateReferenceSystem, QgsCoordinateTransform,
     QgsMapLayer,
