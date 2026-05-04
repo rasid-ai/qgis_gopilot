@@ -7,7 +7,9 @@ from qgis.PyQt.QtCore import QThread, pyqtSignal, QTimer
 from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
 from .compat import (
     Qt_Horizontal, Qt_AlignTop, Qt_AlignCenter, Qt_AlignLeft,
-    Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent
+    Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent,
+    QFrame_NoFrame, QFrame_StyledPanel, exec_dialog, QPainter_Antialiasing,
+    QMessageBox_Question, QMessageBox_Yes, QMessageBox_No
 )
 from .image_loader import load_image
 from .create_process_wizard import CreateProcessWizard
@@ -35,7 +37,7 @@ def create_trash_icon(size=24, color="#e74c3c"):
     pixmap.fill(Qt_transparent)
 
     painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter_Antialiasing)
 
     pen = QPen(QColor(color))
     pen.setWidth(2)
@@ -253,7 +255,7 @@ class ProcessesPage(QWidget):
         left_layout.setContentsMargins(0, 0, 0, 0)
         self._list_scroll = QScrollArea()
         self._list_scroll.setWidgetResizable(True)
-        self._list_scroll.setFrameShape(QFrame.NoFrame)
+        self._list_scroll.setFrameShape(QFrame_NoFrame)
         self._list_scroll.setMinimumWidth(220)
         left_layout.addWidget(self._list_scroll)
 
@@ -269,7 +271,7 @@ class ProcessesPage(QWidget):
         # Right: detail panel
         self._detail_scroll = QScrollArea()
         self._detail_scroll.setWidgetResizable(True)
-        self._detail_scroll.setFrameShape(QFrame.NoFrame)
+        self._detail_scroll.setFrameShape(QFrame_NoFrame)
         splitter.addWidget(self._detail_scroll)
 
         self._detail_widget = QWidget()
@@ -436,7 +438,7 @@ class ProcessesPage(QWidget):
 
     def _create_row(self, proc):
         row = QFrame()
-        row.setFrameShape(QFrame.StyledPanel)
+        row.setFrameShape(QFrame_StyledPanel)
         row.setCursor(Qt_PointingHandCursor)
         row.setStyleSheet("""
             QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }
@@ -866,7 +868,7 @@ class ProcessesPage(QWidget):
         # Create message box with clickable link
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Hide Process")
-        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setIcon(QMessageBox_Question)
         msg_box.setText(
             f'Are you sure you want to hide "{process_name}"?<br><br>'
             "This will hide the process. To fully delete it, visit:<br>"
@@ -874,11 +876,11 @@ class ProcessesPage(QWidget):
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
-        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg_box.setDefaultButton(QMessageBox.No)
+        msg_box.setStandardButtons(QMessageBox_Yes | QMessageBox_No)
+        msg_box.setDefaultButton(QMessageBox_No)
 
-        reply = msg_box.exec_()
-        if reply != QMessageBox.Yes:
+        reply = exec_dialog(msg_box)
+        if reply != QMessageBox_Yes:
             return
 
         slug = self._current_project.get("slug", "")

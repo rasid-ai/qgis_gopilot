@@ -6,7 +6,9 @@ from qgis.PyQt.QtCore import QThread, pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter, QColor, QPen
 from .compat import (
     Qt_AlignTop, Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor,
-    Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent
+    Qt_RichText, Qt_TextBrowserInteraction, Qt_transparent,
+    QFrame_NoFrame, QFrame_StyledPanel, exec_dialog, QPainter_Antialiasing,
+    QMessageBox_Question, QMessageBox_Yes, QMessageBox_No
 )
 from .image_loader import load_image
 
@@ -19,7 +21,7 @@ def create_trash_icon(size=24, color="#e74c3c"):
     pixmap.fill(Qt_transparent)
 
     painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter_Antialiasing)
 
     pen = QPen(QColor(color))
     pen.setWidth(2)
@@ -95,7 +97,7 @@ class ProjectsPage(QWidget):
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QFrame.NoFrame)
+        self.scroll.setFrameShape(QFrame_NoFrame)
         outer.addWidget(self.scroll)
 
         self._inner = QWidget()
@@ -145,7 +147,7 @@ class ProjectsPage(QWidget):
 
     def _create_row(self, proj):
         row = QFrame()
-        row.setFrameShape(QFrame.StyledPanel)
+        row.setFrameShape(QFrame_StyledPanel)
         row.setStyleSheet(
             "QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }"
             "QFrame:hover { background: #e8f5f3; }"
@@ -224,7 +226,7 @@ class ProjectsPage(QWidget):
         # Create message box with clickable link
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Hide Project")
-        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setIcon(QMessageBox_Question)
         msg_box.setText(
             f"Are you sure you want to hide '{title}'?<br><br>"
             "This will move the project to your hidden items. "
@@ -233,11 +235,11 @@ class ProjectsPage(QWidget):
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
-        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg_box.setDefaultButton(QMessageBox.No)
+        msg_box.setStandardButtons(QMessageBox_Yes | QMessageBox_No)
+        msg_box.setDefaultButton(QMessageBox_No)
 
-        reply = msg_box.exec_()
-        if reply != QMessageBox.Yes:
+        reply = exec_dialog(msg_box)
+        if reply != QMessageBox_Yes:
             return
 
         slug = proj.get("slug", "")

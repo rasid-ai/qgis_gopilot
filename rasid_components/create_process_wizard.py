@@ -13,7 +13,10 @@ from qgis.core import (
     QgsMapLayer,
 )
 from .aoi_tool import AoiDrawTool
-from .compat import Qt_AlignCenter, Qt_PointingHandCursor, Qt_UserRole
+from .compat import (
+    Qt_AlignCenter, Qt_PointingHandCursor, Qt_UserRole, QFrame_NoFrame,
+    QMessageBox_Yes, QMessageBox_No
+)
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +131,7 @@ class CreateProcessWizard(QWidget):
         # Scrollable form
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame_NoFrame)
         outer.addWidget(scroll, stretch=1)
 
         self._form = QWidget()
@@ -512,9 +515,9 @@ class CreateProcessWizard(QWidget):
                 self, "Multiple Features",
                 f"The layer has {len(feats)} features. Only the first feature will be used.\n\n"
                 "Do you want to continue?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                QMessageBox_Yes | QMessageBox_No, QMessageBox_No
             )
-            if reply != QMessageBox.Yes:
+            if reply != QMessageBox_Yes:
                 self._layer_combo.setCurrentIndex(0)
                 return
 

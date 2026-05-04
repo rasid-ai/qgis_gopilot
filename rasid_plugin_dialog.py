@@ -11,7 +11,8 @@ from qgis.PyQt.QtCore import QThread, pyqtSignal
 from .rasid_components.compat import (
     Qt_WindowMinimizeButtonHint, Qt_WindowMaximizeButtonHint,
     Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation,
-    Qt_RichText, Qt_TextBrowserInteraction, Qt_PointingHandCursor
+    Qt_RichText, Qt_TextBrowserInteraction, Qt_PointingHandCursor,
+    QFrame_HLine, exec_dialog
 )
 from .rasid_components.solutions_page import SolutionsPage
 from .rasid_components.projects_page import ProjectsPage
@@ -118,7 +119,7 @@ class RasidPluginDialog(QDialog):
 
         # Separator
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame_HLine)
         sep.setStyleSheet("color: #ddd;")
         sep.setFixedHeight(2)
         sidebar_layout.addWidget(sep)
@@ -234,7 +235,7 @@ class RasidPluginDialog(QDialog):
             page_name = "about"
 
         dialog = FeedbackDialog(self.client, current_page=page_name, parent=self)
-        dialog.exec_()
+        exec_dialog(dialog)
 
     def show_about(self):
         self.stacked_widget.setCurrentWidget(self.about_page)

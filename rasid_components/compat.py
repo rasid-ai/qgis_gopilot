@@ -1,8 +1,8 @@
 """Qt5/Qt6 Compatibility Layer for QGIS 3.x and 4.x
 
 This module provides version-safe Qt constants that work across both:
-- QGIS 3.x (Qt5/PyQt5) - uses flat enum syntax: Qt.AlignCenter, Qt.WindowCloseButtonHint
-- QGIS 4.x (Qt6/PyQt6) - uses scoped enum syntax: Qt.AlignmentFlag.AlignCenter, Qt.WindowType.WindowCloseButtonHint
+- QGIS 3.x (Qt5/PyQt5) - uses flat enum syntax: Qt.AlignCenter, QFrame.HLine
+- QGIS 4.x (Qt6/PyQt6) - uses scoped enum syntax: Qt.AlignmentFlag.AlignCenter, QFrame.Shape.HLine
 
 WHY THIS FILE EXISTS
 ====================
@@ -61,9 +61,26 @@ If you get AttributeError for a missing Qt constant on QGIS 4:
    from .compat import Qt_ConstantName
 """
 from qgis.PyQt.QtCore import QT_VERSION, Qt
-from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtGui import QColor, QPainter
+from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QMessageBox, QDialog
 
 QT6 = QT_VERSION >= 0x060000
+
+
+def exec_dialog(dialog):
+    """Execute a dialog in a Qt5/Qt6 compatible way.
+
+    Qt5 uses exec_(), Qt6 uses exec().
+    This wrapper handles both versions.
+
+    Usage:
+        from .compat import exec_dialog
+        result = exec_dialog(my_dialog)
+    """
+    if QT6:
+        return dialog.exec()
+    else:
+        return dialog.exec_()
 
 if QT6:
     # Window flags
@@ -99,6 +116,39 @@ if QT6:
     Qt_LeftButton                = Qt.MouseButton.LeftButton
     Qt_RightButton               = Qt.MouseButton.RightButton
     Qt_MiddleButton              = Qt.MouseButton.MiddleButton
+
+    # QFrame shapes
+    QFrame_NoFrame               = QFrame.Shape.NoFrame
+    QFrame_HLine                 = QFrame.Shape.HLine
+    QFrame_VLine                 = QFrame.Shape.VLine
+    QFrame_StyledPanel           = QFrame.Shape.StyledPanel
+    QFrame_Panel                 = QFrame.Shape.Panel
+    QFrame_Box                   = QFrame.Shape.Box
+
+    # QLineEdit echo modes
+    QLineEdit_Normal             = QLineEdit.EchoMode.Normal
+    QLineEdit_Password           = QLineEdit.EchoMode.Password
+    QLineEdit_NoEcho             = QLineEdit.EchoMode.NoEcho
+    QLineEdit_PasswordEchoOnEdit = QLineEdit.EchoMode.PasswordEchoOnEdit
+
+    # QPainter render hints
+    QPainter_Antialiasing        = QPainter.RenderHint.Antialiasing
+    QPainter_TextAntialiasing    = QPainter.RenderHint.TextAntialiasing
+    QPainter_SmoothPixmapTransform = QPainter.RenderHint.SmoothPixmapTransform
+
+    # QMessageBox
+    QMessageBox_Information      = QMessageBox.Icon.Information
+    QMessageBox_Question         = QMessageBox.Icon.Question
+    QMessageBox_Warning          = QMessageBox.Icon.Warning
+    QMessageBox_Critical         = QMessageBox.Icon.Critical
+    QMessageBox_Yes              = QMessageBox.StandardButton.Yes
+    QMessageBox_No               = QMessageBox.StandardButton.No
+    QMessageBox_Ok               = QMessageBox.StandardButton.Ok
+    QMessageBox_Cancel           = QMessageBox.StandardButton.Cancel
+
+    # QDialog
+    QDialog_Accepted             = QDialog.DialogCode.Accepted
+    QDialog_Rejected             = QDialog.DialogCode.Rejected
 
     # Misc
     Qt_KeepAspectRatio           = Qt.AspectRatioMode.KeepAspectRatio
@@ -148,6 +198,39 @@ else:
     Qt_LeftButton                = Qt.LeftButton
     Qt_RightButton               = Qt.RightButton
     Qt_MiddleButton              = Qt.MiddleButton
+
+    # QFrame shapes
+    QFrame_NoFrame               = QFrame.NoFrame
+    QFrame_HLine                 = QFrame.HLine
+    QFrame_VLine                 = QFrame.VLine
+    QFrame_StyledPanel           = QFrame.StyledPanel
+    QFrame_Panel                 = QFrame.Panel
+    QFrame_Box                   = QFrame.Box
+
+    # QLineEdit echo modes
+    QLineEdit_Normal             = QLineEdit.Normal
+    QLineEdit_Password           = QLineEdit.Password
+    QLineEdit_NoEcho             = QLineEdit.NoEcho
+    QLineEdit_PasswordEchoOnEdit = QLineEdit.PasswordEchoOnEdit
+
+    # QPainter render hints
+    QPainter_Antialiasing        = QPainter.Antialiasing
+    QPainter_TextAntialiasing    = QPainter.TextAntialiasing
+    QPainter_SmoothPixmapTransform = QPainter.SmoothPixmapTransform
+
+    # QMessageBox
+    QMessageBox_Information      = QMessageBox.Information
+    QMessageBox_Question         = QMessageBox.Question
+    QMessageBox_Warning          = QMessageBox.Warning
+    QMessageBox_Critical         = QMessageBox.Critical
+    QMessageBox_Yes              = QMessageBox.Yes
+    QMessageBox_No               = QMessageBox.No
+    QMessageBox_Ok               = QMessageBox.Ok
+    QMessageBox_Cancel           = QMessageBox.Cancel
+
+    # QDialog
+    QDialog_Accepted             = QDialog.Accepted
+    QDialog_Rejected             = QDialog.Rejected
 
     # Misc
     Qt_KeepAspectRatio           = Qt.KeepAspectRatio

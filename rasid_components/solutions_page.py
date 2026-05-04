@@ -6,7 +6,10 @@ from qgis.PyQt.QtWidgets import (
     QMessageBox,
 )
 from qgis.PyQt.QtCore import QThread, pyqtSignal
-from .compat import Qt_AlignTop, Qt_AlignHCenter, Qt_AlignCenter, Qt_PlainText, Qt_PointingHandCursor
+from .compat import (
+    Qt_AlignTop, Qt_AlignHCenter, Qt_AlignCenter, Qt_PlainText, Qt_PointingHandCursor,
+    QFrame_NoFrame, QFrame_StyledPanel, exec_dialog, QDialog_Accepted
+)
 from .image_loader import load_image
 
 
@@ -68,7 +71,7 @@ class SolutionsPage(QWidget):
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QFrame.NoFrame)
+        self.scroll.setFrameShape(QFrame_NoFrame)
         outer.addWidget(self.scroll)
 
         self._inner = QWidget()
@@ -128,7 +131,7 @@ class SolutionsPage(QWidget):
     def _create_card(self, sol):
         card = QFrame()
         card.setFixedWidth(CARD_WIDTH)
-        card.setFrameShape(QFrame.StyledPanel)
+        card.setFrameShape(QFrame_StyledPanel)
         card.setStyleSheet("""
             QFrame {
                 background: white;
@@ -299,7 +302,7 @@ class SolutionsPage(QWidget):
 
         dlg_layout.addLayout(btn_layout)
 
-        if dlg.exec_() != QDialog.Accepted:
+        if exec_dialog(dlg) != QDialog_Accepted:
             return
 
         title = title_input.text().strip()

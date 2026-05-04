@@ -3,7 +3,10 @@ from qgis.PyQt.QtWidgets import (
     QPushButton, QFrame, QMessageBox
 )
 from qgis.PyQt.QtCore import QThread, pyqtSignal
-from .compat import Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction
+from .compat import (
+    Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction,
+    exec_dialog, QMessageBox_Information
+)
 import platform
 
 
@@ -248,7 +251,7 @@ class FeedbackDialog(QDialog):
         # Create message box with clickable link
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Thank You!")
-        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setIcon(QMessageBox_Information)
         msg_box.setText(
             "Your feedback has been submitted successfully.<br><br>"
             "We appreciate you taking the time to help us improve!<br><br>"
@@ -257,7 +260,7 @@ class FeedbackDialog(QDialog):
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)
-        msg_box.exec_()
+        exec_dialog(msg_box)
 
         self.accept()  # Close dialog
 

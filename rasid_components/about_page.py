@@ -1,5 +1,5 @@
 from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
-from .compat import Qt_ScrollBarAlwaysOff, Qt_AlignTop, Qt_AlignCenter, Qt_TextBrowserInteraction
+from .compat import Qt_ScrollBarAlwaysOff, Qt_AlignTop, Qt_AlignCenter, Qt_TextBrowserInteraction, QFrame_NoFrame, QFrame_HLine
 
 
 class AboutPage(QWidget):
@@ -11,7 +11,7 @@ class AboutPage(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setFrameShape(QFrame_NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt_ScrollBarAlwaysOff)  # FIX
         outer.addWidget(scroll)
 
@@ -50,7 +50,7 @@ class AboutPage(QWidget):
 
         # Separator
         sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
+        sep.setFrameShape(QFrame_HLine)
         sep.setStyleSheet("background: #dce0e3; border: none;")
         sep.setFixedHeight(1)
         card_layout.addWidget(sep)
@@ -100,7 +100,7 @@ class AboutPage(QWidget):
 
         # Footer separator
         sep2 = QFrame()
-        sep2.setFrameShape(QFrame.HLine)
+        sep2.setFrameShape(QFrame_HLine)
         sep2.setStyleSheet("background: #dce0e3; border: none;")
         sep2.setFixedHeight(1)
         card_layout.addWidget(sep2)

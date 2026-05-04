@@ -5,7 +5,10 @@ from qgis.PyQt.QtWidgets import (
     QHBoxLayout, QFrame
 )
 from qgis.PyQt.QtGui import QPixmap
-from .compat import Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor
+from .compat import (
+    Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor,
+    QLineEdit_Password, QLineEdit_Normal
+)
 
 
 class LoginDialog(QDialog):
@@ -116,7 +119,7 @@ class LoginDialog(QDialog):
         pass_row.setSpacing(8)
 
         self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setEchoMode(QLineEdit_Password)
         self.password_input.setPlaceholderText("Enter your password")
         self.password_input.setStyleSheet("""
             QLineEdit {
@@ -198,11 +201,11 @@ class LoginDialog(QDialog):
         self.token = None
 
     def _toggle_password(self):
-        if self.password_input.echoMode() == QLineEdit.Password:
-            self.password_input.setEchoMode(QLineEdit.Normal)
+        if self.password_input.echoMode() == QLineEdit_Password:
+            self.password_input.setEchoMode(QLineEdit_Normal)
             self._eye_btn.setText("🙈")
             self._eye_btn.setToolTip("Hide password")
         else:
-            self.password_input.setEchoMode(QLineEdit.Password)
+            self.password_input.setEchoMode(QLineEdit_Password)
             self._eye_btn.setText("👁")
             self._eye_btn.setToolTip("Show password")

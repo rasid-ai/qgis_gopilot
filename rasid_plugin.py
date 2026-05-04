@@ -28,6 +28,7 @@ from qgis.PyQt.QtWidgets import QAction
 from .resources import *
 from .rasid_plugin_dialog import RasidPluginDialog
 from .rasid_components.login_dialog import LoginDialog
+from .rasid_components.compat import exec_dialog
 from .rasid_components.rasid_client import RasidClient
 from qgis.PyQt.QtWidgets import QMessageBox, QProgressDialog
 import os.path
@@ -126,7 +127,7 @@ class RasidPlugin:
         self.dlg = RasidPluginDialog(self.client, iface=self.iface)
         self.dlg.show_solutions()
         self.dlg.show()
-        self.dlg.exec_()
+        exec_dialog(self.dlg)
 
     def _do_login(self, email, password, save_credentials=False):
         """Run login on a background thread with a progress dialog."""
@@ -201,7 +202,7 @@ class RasidPlugin:
         else:
             # Show login dialog
             login_dialog = LoginDialog()
-            if login_dialog.exec_() != login_dialog.Accepted:
+            if exec_dialog(login_dialog) != login_dialog.Accepted:
                 return
             email = login_dialog.email_input.text()
             password = login_dialog.password_input.text()
