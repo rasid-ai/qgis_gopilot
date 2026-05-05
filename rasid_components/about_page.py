@@ -1,5 +1,6 @@
 from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
 from .compat import Qt_ScrollBarAlwaysOff, Qt_AlignTop, Qt_AlignCenter, Qt_TextBrowserInteraction, QFrame_NoFrame, QFrame_HLine
+from . import theme_utils
 
 
 class AboutPage(QWidget):
@@ -24,12 +25,14 @@ class AboutPage(QWidget):
         # Single white card
         content_card = QFrame()
         content_card.setObjectName("contentCard")  # FIX (better styling in QGIS)
-        content_card.setStyleSheet("""
-            QFrame#contentCard {
-                background: white;
-                border: 1px solid #dce0e3;
+        card_bg = theme_utils.get_card_bg()
+        card_border = theme_utils.get_card_border()
+        content_card.setStyleSheet(f"""
+            QFrame#contentCard {{
+                background: {card_bg};
+                border: 1px solid {card_border};
                 border-radius: 8px;
-            }
+            }}
         """)
         content_card.setMaximumWidth(16777215)
 
@@ -40,18 +43,20 @@ class AboutPage(QWidget):
         # Title
         title = QLabel("About RASID")
         title.setAlignment(Qt_AlignCenter)
-        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #2c3e50;")
+        text_color = theme_utils.get_text_color()
+        title.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {text_color};")
         card_layout.addWidget(title)
 
         subtitle = QLabel("AI-Powered Earth Observation Platform")
         subtitle.setAlignment(Qt_AlignCenter)
-        subtitle.setStyleSheet("font-size: 15px; color: #00856F; font-weight: bold; margin-bottom: 16px;")
+        subtitle.setStyleSheet(f"font-size: 15px; color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; margin-bottom: 16px;")
         card_layout.addWidget(subtitle)
 
         # Separator
         sep = QFrame()
         sep.setFrameShape(QFrame_HLine)
-        sep.setStyleSheet("background: #dce0e3; border: none;")
+        sep_color = theme_utils.get_separator_color()
+        sep.setStyleSheet(f"background: {sep_color}; border: none;")
         sep.setFixedHeight(1)
         card_layout.addWidget(sep)
 
@@ -64,7 +69,7 @@ class AboutPage(QWidget):
             "deep knowledge in AI, geospatial data, and industry-specific solutions."
         )
         desc1.setWordWrap(True)
-        desc1.setStyleSheet("font-size: 14px; color: #2c3e50;")
+        desc1.setStyleSheet(f"font-size: 14px; color: {text_color};")
         card_layout.addWidget(desc1)
 
         desc2 = QLabel(
@@ -73,7 +78,7 @@ class AboutPage(QWidget):
             "Our team is prepared to act on innovative solutions."
         )
         desc2.setWordWrap(True)
-        desc2.setStyleSheet("font-size: 14px; color: #2c3e50;")
+        desc2.setStyleSheet(f"font-size: 14px; color: {text_color};")
         card_layout.addWidget(desc2)
 
         desc3 = QLabel(
@@ -81,19 +86,20 @@ class AboutPage(QWidget):
             "applied to the most pressing challenges in your sector."
         )
         desc3.setWordWrap(True)
-        desc3.setStyleSheet("font-size: 14px; color: #2c3e50;")
+        desc3.setStyleSheet(f"font-size: 14px; color: {text_color};")
         card_layout.addWidget(desc3)
 
         card_layout.addSpacing(12)
 
         # Website link
+        secondary_color = theme_utils.get_secondary_text_color()
         link = QLabel(
-            'Learn more at <a href="https://rasid.ai" style="color: #00856F; font-weight: bold; text-decoration: none;">rasid.ai</a>'
+            f'Learn more at <a href="https://rasid.ai" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: none;">rasid.ai</a>'
         )
         link.setAlignment(Qt_AlignCenter)
         link.setOpenExternalLinks(True)
         link.setTextInteractionFlags(Qt_TextBrowserInteraction)  # FIX
-        link.setStyleSheet("font-size: 14px; color: #7f8c8d;")
+        link.setStyleSheet(f"font-size: 14px; color: {secondary_color};")
         card_layout.addWidget(link)
 
         card_layout.addSpacing(16)
@@ -101,7 +107,7 @@ class AboutPage(QWidget):
         # Footer separator
         sep2 = QFrame()
         sep2.setFrameShape(QFrame_HLine)
-        sep2.setStyleSheet("background: #dce0e3; border: none;")
+        sep2.setStyleSheet(f"background: {sep_color}; border: none;")
         sep2.setFixedHeight(1)
         card_layout.addWidget(sep2)
 
@@ -110,23 +116,23 @@ class AboutPage(QWidget):
         # Version
         version = QLabel("RASID SaaS 2.0.0")
         version.setAlignment(Qt_AlignCenter)
-        version.setStyleSheet("font-size: 13px; font-weight: bold; color: #2c3e50;")
+        version.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {text_color};")
         card_layout.addWidget(version)
 
         # Terms link
         tos = QLabel(
-            '<a href="https://app.rasid.ai/terms" style="color: #00856F; text-decoration: none;">Terms of Service</a>'
+            f'<a href="https://app.rasid.ai/terms" style="color: {theme_utils.BRAND_PRIMARY}; text-decoration: none;">Terms of Service</a>'
         )
         tos.setAlignment(Qt_AlignCenter)
         tos.setOpenExternalLinks(True)
         tos.setTextInteractionFlags(Qt_TextBrowserInteraction)  # FIX
-        tos.setStyleSheet("font-size: 12px; color: #7f8c8d;")
+        tos.setStyleSheet(f"font-size: 12px; color: {secondary_color};")
         card_layout.addWidget(tos)
 
         # Copyright
         copy_lbl = QLabel("\u00a9 2026 RASID SaaS. All rights reserved.")
         copy_lbl.setAlignment(Qt_AlignCenter)
-        copy_lbl.setStyleSheet("font-size: 11px; color: #7f8c8d;")
+        copy_lbl.setStyleSheet(f"font-size: 11px; color: {secondary_color};")
         card_layout.addWidget(copy_lbl)
 
         layout.addWidget(content_card)

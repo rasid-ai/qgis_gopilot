@@ -11,6 +11,7 @@ from .compat import (
     QFrame_NoFrame, QFrame_StyledPanel, exec_dialog, QDialog_Accepted
 )
 from .image_loader import load_image
+from . import theme_utils
 
 
 def strip_html(text):
@@ -132,12 +133,14 @@ class SolutionsPage(QWidget):
         card = QFrame()
         card.setFixedWidth(CARD_WIDTH)
         card.setFrameShape(QFrame_StyledPanel)
-        card.setStyleSheet("""
-            QFrame {
-                background: white;
-                border: 1px solid #ddd;
+        card_bg = theme_utils.get_card_bg()
+        card_border = theme_utils.get_card_border()
+        card.setStyleSheet(f"""
+            QFrame {{
+                background: {card_bg};
+                border: 1px solid {card_border};
                 border-radius: 6px;
-            }
+            }}
         """)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -147,7 +150,8 @@ class SolutionsPage(QWidget):
         thumb = QLabel()
         thumb.setFixedSize(THUMB_SIZE, THUMB_SIZE)
         thumb.setAlignment(Qt_AlignCenter)
-        thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
+        thumb_bg = theme_utils.get_sidebar_bg()
+        thumb.setStyleSheet(f"background: {thumb_bg}; border-radius: 4px; border: none;")
         load_image(self.client, sol.get("image_url"), thumb, self._threads,
                    size=(THUMB_SIZE, THUMB_SIZE))
         layout.addWidget(thumb, alignment=Qt_AlignCenter)
@@ -156,7 +160,8 @@ class SolutionsPage(QWidget):
         name = QLabel(sol.get("name", "Unnamed"))
         name.setAlignment(Qt_AlignCenter)
         name.setWordWrap(True)
-        name.setStyleSheet("font-weight: bold; font-size: 13px; border: none;")
+        text_color = theme_utils.get_text_color()
+        name.setStyleSheet(f"font-weight: bold; font-size: 13px; border: none; color: {text_color};")
         layout.addWidget(name)
 
         # Description
@@ -166,9 +171,10 @@ class SolutionsPage(QWidget):
             desc.setTextFormat(Qt_PlainText)
             desc.setWordWrap(True)
             desc.setMaximumHeight(60)
+            secondary_color = theme_utils.get_secondary_text_color()
             desc.setStyleSheet(
-                "color: #666; font-size: 11px; border: none;"
-                "padding: 6px 2px; margin-top: 4px; margin-bottom: 4px;"
+                f"color: {secondary_color}; font-size: 11px; border: none;"
+                f"padding: 6px 2px; margin-top: 4px; margin-bottom: 4px;"
             )
             layout.addWidget(desc)
 
@@ -178,7 +184,7 @@ class SolutionsPage(QWidget):
             price_lbl = QLabel(f"€{price} / km²")
             price_lbl.setAlignment(Qt_AlignCenter)
             price_lbl.setStyleSheet(
-                "color: #009980; font-weight: bold; font-size: 12px; border: none;"
+                f"color: {theme_utils.BRAND_HOVER}; font-weight: bold; font-size: 12px; border: none;"
             )
             layout.addWidget(price_lbl)
 
@@ -187,12 +193,12 @@ class SolutionsPage(QWidget):
         if status == "prod":
             btn = QPushButton("Create Project")
             btn.setCursor(Qt_PointingHandCursor)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background: #00856F; color: white;
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: {theme_utils.BRAND_PRIMARY}; color: white;
                     border: none; border-radius: 4px; padding: 6px;
-                }
-                QPushButton:hover { background: #009980; }
+                }}
+                QPushButton:hover {{ background: {theme_utils.BRAND_HOVER}; }}
             """)
             btn.clicked.connect(lambda _, s=sol: self._on_create_project(s))
             layout.addWidget(btn)
@@ -216,30 +222,33 @@ class SolutionsPage(QWidget):
         dlg = QDialog(self)
         dlg.setWindowTitle("Create Project")
         dlg.setMinimumWidth(420)
-        dlg.setStyleSheet("background: white;")
+        dialog_bg = theme_utils.get_card_bg()
+        dlg.setStyleSheet(f"background: {dialog_bg};")
         dlg_layout = QVBoxLayout(dlg)
         dlg_layout.setContentsMargins(24, 24, 24, 24)
         dlg_layout.setSpacing(18)
 
         # Solution label
         sol_label = QLabel(f"Solution: {sol_name}")
-        sol_label.setStyleSheet("font-weight: bold; color: #2c3e50; font-size: 13px;")
+        text_color = theme_utils.get_text_color()
+        sol_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 13px;")
         dlg_layout.addWidget(sol_label)
 
         # Project title
         dlg_layout.addWidget(QLabel("Project Title:"))
         title_input = QLineEdit()
         title_input.setPlaceholderText("Enter project title...")
-        title_input.setStyleSheet("""
-            QLineEdit {
+        input_border = theme_utils.get_card_border()
+        title_input.setStyleSheet(f"""
+            QLineEdit {{
                 padding: 10px 12px;
-                border: 2px solid #dce0e3;
+                border: 2px solid {input_border};
                 border-radius: 6px;
                 font-size: 13px;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00856F;
-            }
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {theme_utils.BRAND_PRIMARY};
+            }}
         """)
         dlg_layout.addWidget(title_input)
 
@@ -247,16 +256,16 @@ class SolutionsPage(QWidget):
         dlg_layout.addWidget(QLabel("Tags (separated by spaces):"))
         tags_input = QLineEdit()
         tags_input.setPlaceholderText("e.g. cloud detection urban")
-        tags_input.setStyleSheet("""
-            QLineEdit {
+        tags_input.setStyleSheet(f"""
+            QLineEdit {{
                 padding: 10px 12px;
-                border: 2px solid #dce0e3;
+                border: 2px solid {input_border};
                 border-radius: 6px;
                 font-size: 13px;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00856F;
-            }
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {theme_utils.BRAND_PRIMARY};
+            }}
         """)
         dlg_layout.addWidget(tags_input)
 
@@ -266,36 +275,39 @@ class SolutionsPage(QWidget):
 
         cancel_btn = QPushButton("Cancel")
         cancel_btn.setCursor(Qt_PointingHandCursor)
-        cancel_btn.setStyleSheet("""
-            QPushButton {
-                background: #f7f8fa;
-                color: #64748b;
-                border: 2px solid #dce0e3;
+        cancel_bg = theme_utils.get_sidebar_bg()
+        cancel_hover = theme_utils.get_hover_bg()
+        cancel_text = theme_utils.get_text_color()
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {cancel_bg};
+                color: {cancel_text};
+                border: 2px solid {input_border};
                 border-radius: 6px;
                 padding: 8px 20px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background: #e8f5f3;
-            }
+            }}
+            QPushButton:hover {{
+                background: {cancel_hover};
+            }}
         """)
         cancel_btn.clicked.connect(dlg.reject)
         btn_layout.addWidget(cancel_btn)
 
         create_btn = QPushButton("Create")
         create_btn.setCursor(Qt_PointingHandCursor)
-        create_btn.setStyleSheet("""
-            QPushButton {
-                background: #00856F;
+        create_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {theme_utils.BRAND_PRIMARY};
                 color: white;
                 border: none;
                 border-radius: 6px;
                 padding: 8px 20px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background: #009980;
-            }
+            }}
+            QPushButton:hover {{
+                background: {theme_utils.BRAND_HOVER};
+            }}
         """)
         create_btn.clicked.connect(dlg.accept)
         btn_layout.addWidget(create_btn)

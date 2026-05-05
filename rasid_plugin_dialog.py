@@ -19,6 +19,7 @@ from .rasid_components.projects_page import ProjectsPage
 from .rasid_components.processes_page import ProcessesPage
 from .rasid_components.feedback_dialog import FeedbackDialog
 from .rasid_components.about_page import AboutPage
+from .rasid_components import theme_utils
 
 SIDEBAR_WIDTH = 190
 
@@ -30,11 +31,6 @@ NAV_BTN_STYLE = """
     }}
     QPushButton:hover {{ background: {hover}; }}
 """
-
-ACTIVE_BG = "#00856F"
-ACTIVE_HOVER = "#009980"
-NORMAL_BG = "transparent"
-NORMAL_HOVER = "#e8f5f3"
 
 
 class FetchProfileThread(QThread):
@@ -74,8 +70,10 @@ class RasidPluginDialog(QDialog):
         # ── Sidebar ──
         sidebar = QFrame()
         sidebar.setFixedWidth(SIDEBAR_WIDTH)
+        sidebar_bg = theme_utils.get_sidebar_bg()
+        sidebar_border = theme_utils.get_sidebar_border()
         sidebar.setStyleSheet(
-            "QFrame#sidebar { background: #f7f8fa; border-right: 1px solid #ddd; }"
+            f"QFrame#sidebar {{ background: {sidebar_bg}; border-right: 1px solid {sidebar_border}; }}"
         )
         sidebar.setObjectName("sidebar")
         sidebar_layout = QVBoxLayout(sidebar)
@@ -92,14 +90,16 @@ class RasidPluginDialog(QDialog):
             logo_label.setPixmap(pm.scaled(80, 80, Qt_KeepAspectRatio, Qt_SmoothTransformation))
         else:
             logo_label.setText("RASID")
-            logo_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #2c3e50;")
+            text_color = theme_utils.get_text_color()
+            logo_label.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {text_color};")
         sidebar_layout.addWidget(logo_label)
 
         # Welcome + balance (compact)
         self._welcome_label = QLabel("")
         self._welcome_label.setWordWrap(True)
         self._welcome_label.setAlignment(Qt_AlignCenter)
-        self._welcome_label.setStyleSheet("font-size: 12px; font-weight: bold; color: #2c3e50; margin: 0; padding: 0;")
+        text_color = theme_utils.get_text_color()
+        self._welcome_label.setStyleSheet(f"font-size: 12px; font-weight: bold; color: {text_color}; margin: 0; padding: 0;")
         self._welcome_label.setTextFormat(Qt_RichText)
         self._welcome_label.setTextInteractionFlags(Qt_TextBrowserInteraction)
         self._welcome_label.setOpenExternalLinks(True)
@@ -109,7 +109,7 @@ class RasidPluginDialog(QDialog):
         self._balance_label = QLabel("")
         self._balance_label.setAlignment(Qt_AlignCenter)
         self._balance_label.setStyleSheet(
-            "font-size: 11px; color: #00856F; font-weight: bold; margin: 0; padding: 0 0 4px 0;"
+            f"font-size: 11px; color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; margin: 0; padding: 0 0 4px 0;"
         )
         self._balance_label.setTextFormat(Qt_RichText)
         self._balance_label.setTextInteractionFlags(Qt_TextBrowserInteraction)
@@ -120,7 +120,8 @@ class RasidPluginDialog(QDialog):
         # Separator
         sep = QFrame()
         sep.setFrameShape(QFrame_HLine)
-        sep.setStyleSheet("color: #ddd;")
+        sep_color = theme_utils.get_separator_color()
+        sep.setStyleSheet(f"color: {sep_color};")
         sep.setFixedHeight(2)
         sidebar_layout.addWidget(sep)
 
@@ -132,8 +133,10 @@ class RasidPluginDialog(QDialog):
         # Feedback button (opens dialog, not navigation)
         self.btn_feedback = QPushButton("Feedback")
         self.btn_feedback.setCursor(Qt_PointingHandCursor)
+        text_color = theme_utils.get_text_color()
+        hover_bg = theme_utils.get_hover_bg()
         self.btn_feedback.setStyleSheet(NAV_BTN_STYLE.format(
-            bg=NORMAL_BG, fg="#2c3e50", hover=NORMAL_HOVER
+            bg="transparent", fg=text_color, hover=hover_bg
         ))
         sidebar_layout.addWidget(self.btn_feedback)
 
@@ -144,10 +147,11 @@ class RasidPluginDialog(QDialog):
         # Logout at bottom
         self.btn_logout = QPushButton("Log Out")
         self.btn_logout.setCursor(Qt_PointingHandCursor)
+        danger_hover = theme_utils.get_danger_hover_bg()
         self.btn_logout.setStyleSheet(
-            "QPushButton { background: transparent; color: #e74c3c; border: 1px solid #e74c3c;"
-            "border-radius: 6px; padding: 8px 0; font-size: 12px; font-weight: bold; }"
-            "QPushButton:hover { background: #fdeaea; }"
+            f"QPushButton {{ background: transparent; color: {theme_utils.BRAND_DANGER}; border: 1px solid {theme_utils.BRAND_DANGER};"
+            f"border-radius: 6px; padding: 8px 0; font-size: 12px; font-weight: bold; }}"
+            f"QPushButton:hover {{ background: {danger_hover}; }}"
         )
         sidebar_layout.addWidget(self.btn_logout)
 
@@ -187,22 +191,26 @@ class RasidPluginDialog(QDialog):
     def _make_nav_btn(self, text, layout):
         btn = QPushButton(text)
         btn.setCursor(Qt_PointingHandCursor)
+        text_color = theme_utils.get_text_color()
+        hover_bg = theme_utils.get_hover_bg()
         btn.setStyleSheet(NAV_BTN_STYLE.format(
-            bg=NORMAL_BG, fg="#2c3e50", hover=NORMAL_HOVER
+            bg="transparent", fg=text_color, hover=hover_bg
         ))
         layout.addWidget(btn)
         self._nav_buttons.append(btn)
         return btn
 
     def _set_active_btn(self, active_btn):
+        text_color = theme_utils.get_text_color()
+        hover_bg = theme_utils.get_hover_bg()
         for btn in self._nav_buttons:
             if btn is active_btn:
                 btn.setStyleSheet(NAV_BTN_STYLE.format(
-                    bg=ACTIVE_BG, fg="white", hover=ACTIVE_HOVER
+                    bg=theme_utils.BRAND_PRIMARY, fg="white", hover=theme_utils.BRAND_HOVER
                 ))
             else:
                 btn.setStyleSheet(NAV_BTN_STYLE.format(
-                    bg=NORMAL_BG, fg="#2c3e50", hover=NORMAL_HOVER
+                    bg="transparent", fg=text_color, hover=hover_bg
                 ))
 
     def show_solutions(self):
@@ -270,8 +278,9 @@ class RasidPluginDialog(QDialog):
         first = profile.get("first_name", "")
         last = profile.get("last_name", "")
         name = f"{first} {last}".strip() or profile.get("email", "User")
-        self._welcome_label.setText(f'<a href="https://app.rasid.ai/profile" style="color: #2c3e50; font-weight: bold; text-decoration: underline;">Welcome, {name}</a>')
+        text_color = theme_utils.get_text_color()
+        self._welcome_label.setText(f'<a href="https://app.rasid.ai/profile" style="color: {text_color}; font-weight: bold; text-decoration: underline;">Welcome, {name}</a>')
 
         balance = data.get("balance", {})
         amount = balance.get("amount", 0)
-        self._balance_label.setText(f'<a href="https://app.rasid.ai/payment/refill" style="color: #00856F; font-weight: bold; text-decoration: underline;">Credits: €{amount}</a>')
+        self._balance_label.setText(f'<a href="https://app.rasid.ai/payment/refill" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: underline;">Credits: €{amount}</a>')

@@ -9,6 +9,7 @@ from .compat import (
     Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor,
     QLineEdit_Password, QLineEdit_Normal
 )
+from . import theme_utils
 
 
 class LoginDialog(QDialog):
@@ -17,7 +18,10 @@ class LoginDialog(QDialog):
         self.setWindowTitle("RASID Login")
         self.setMinimumWidth(750)
         self.setMinimumHeight(500)
-        self.setStyleSheet("background: white;")
+
+        # Theme-aware background
+        bg_color = theme_utils.get_card_bg()
+        self.setStyleSheet(f"background: {bg_color};")
 
         # Main layout (two columns)
         main_layout = QHBoxLayout(self)
@@ -70,40 +74,47 @@ class LoginDialog(QDialog):
         # RIGHT COLUMN - Login Form
         # ═══════════════════════════════════════════════════════════════
         right_panel = QFrame()
-        right_panel.setStyleSheet("background: white;")
+        panel_bg = theme_utils.get_card_bg()
+        right_panel.setStyleSheet(f"background: {panel_bg};")
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(50, 60, 50, 60)
         right_layout.setSpacing(0)
 
         # Form title
         form_title = QLabel("Sign In")
-        form_title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;")
+        text_color = theme_utils.get_text_color()
+        form_title.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color}; margin-bottom: 10px;")
         right_layout.addWidget(form_title)
 
         form_subtitle = QLabel("Enter your credentials to continue")
-        form_subtitle.setStyleSheet("font-size: 13px; color: #7f8c8d; margin-bottom: 30px;")
+        secondary_color = theme_utils.get_secondary_text_color()
+        form_subtitle.setStyleSheet(f"font-size: 13px; color: {secondary_color}; margin-bottom: 30px;")
         right_layout.addWidget(form_subtitle)
 
         right_layout.addSpacing(20)
 
         # Email field
         self.email_label = QLabel("Email Address")
-        self.email_label.setStyleSheet("font-weight: bold; color: #2c3e50; font-size: 12px; margin-bottom: 6px;")
+        text_color = theme_utils.get_text_color()
+        self.email_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 12px; margin-bottom: 6px;")
         right_layout.addWidget(self.email_label)
 
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("Enter your email")
-        self.email_input.setStyleSheet("""
-            QLineEdit {
+        input_bg = theme_utils.get_card_bg()
+        border_color = theme_utils.get_card_border()
+        self.email_input.setStyleSheet(f"""
+            QLineEdit {{
                 padding: 12px 14px;
-                border: 2px solid #dce0e3;
+                border: 2px solid {border_color};
                 border-radius: 6px;
                 font-size: 13px;
-                background: white;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00856F;
-            }
+                background: {input_bg};
+                color: {text_color};
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {theme_utils.BRAND_PRIMARY};
+            }}
         """)
         right_layout.addWidget(self.email_input)
 
@@ -111,7 +122,8 @@ class LoginDialog(QDialog):
 
         # Password field
         self.password_label = QLabel("Password")
-        self.password_label.setStyleSheet("font-weight: bold; color: #2c3e50; font-size: 12px; margin-bottom: 6px;")
+        text_color = theme_utils.get_text_color()
+        self.password_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 12px; margin-bottom: 6px;")
         right_layout.addWidget(self.password_label)
 
         # Password row with input + eye button
@@ -121,34 +133,39 @@ class LoginDialog(QDialog):
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit_Password)
         self.password_input.setPlaceholderText("Enter your password")
-        self.password_input.setStyleSheet("""
-            QLineEdit {
+        input_bg = theme_utils.get_card_bg()
+        border_color = theme_utils.get_card_border()
+        self.password_input.setStyleSheet(f"""
+            QLineEdit {{
                 padding: 12px 14px;
-                border: 2px solid #dce0e3;
+                border: 2px solid {border_color};
                 border-radius: 6px;
                 font-size: 13px;
-                background: white;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00856F;
-            }
+                background: {input_bg};
+                color: {text_color};
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {theme_utils.BRAND_PRIMARY};
+            }}
         """)
         pass_row.addWidget(self.password_input)
 
         self._eye_btn = QPushButton("👁")
         self._eye_btn.setFixedSize(48, 48)
         self._eye_btn.setCursor(Qt_PointingHandCursor)
-        self._eye_btn.setStyleSheet("""
-            QPushButton {
-                background: #f7f8fa;
-                color: black;
-                border: 2px solid #dce0e3;
+        eye_bg = theme_utils.get_sidebar_bg()
+        eye_hover = theme_utils.get_hover_bg()
+        self._eye_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {eye_bg};
+                color: {text_color};
+                border: 2px solid {border_color};
                 border-radius: 6px;
                 font-size: 18px;
-            }
-            QPushButton:hover {
-                background: #dce6f0;
-            }
+            }}
+            QPushButton:hover {{
+                background: {eye_hover};
+            }}
         """)
         self._eye_btn.setToolTip("Show password")
         self._eye_btn.clicked.connect(self._toggle_password)
@@ -161,22 +178,22 @@ class LoginDialog(QDialog):
         # Login button
         self.login_button = QPushButton("Sign In")
         self.login_button.setCursor(Qt_PointingHandCursor)
-        self.login_button.setStyleSheet("""
-            QPushButton {
-                background: #00856F;
+        self.login_button.setStyleSheet(f"""
+            QPushButton {{
+                background: {theme_utils.BRAND_PRIMARY};
                 color: white;
                 border: none;
                 border-radius: 6px;
                 padding: 14px;
                 font-weight: bold;
                 font-size: 14px;
-            }
-            QPushButton:hover {
-                background: #009980;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:hover {{
+                background: {theme_utils.BRAND_HOVER};
+            }}
+            QPushButton:pressed {{
                 background: #006b5a;
-            }
+            }}
         """)
         self.login_button.clicked.connect(self.accept)
         right_layout.addWidget(self.login_button)
@@ -184,13 +201,14 @@ class LoginDialog(QDialog):
         right_layout.addSpacing(20)
 
         # Sign up link
+        secondary_color = theme_utils.get_secondary_text_color()
         signup_label = QLabel(
             'Don\'t have an account? '
-            '<a href="https://app.rasid.ai/auth?active_form=register" style="color: #00856F; font-weight: bold; text-decoration: none;">Sign up</a>'
+            f'<a href="https://app.rasid.ai/auth?active_form=register" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: none;">Sign up</a>'
         )
         signup_label.setOpenExternalLinks(True)
         signup_label.setAlignment(Qt_AlignCenter)
-        signup_label.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        signup_label.setStyleSheet(f"color: {secondary_color}; font-size: 12px;")
         right_layout.addWidget(signup_label)
 
         right_layout.addStretch()

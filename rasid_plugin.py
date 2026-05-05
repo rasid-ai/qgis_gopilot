@@ -28,7 +28,7 @@ from qgis.PyQt.QtWidgets import QAction
 from .resources import *
 from .rasid_plugin_dialog import RasidPluginDialog
 from .rasid_components.login_dialog import LoginDialog
-from .rasid_components.compat import exec_dialog
+from .rasid_components.compat import exec_dialog, QDialog_Accepted
 from .rasid_components.rasid_client import RasidClient
 from qgis.PyQt.QtWidgets import QMessageBox, QProgressDialog
 import os.path
@@ -202,7 +202,7 @@ class RasidPlugin:
         else:
             # Show login dialog
             login_dialog = LoginDialog()
-            if exec_dialog(login_dialog) != login_dialog.Accepted:
+            if exec_dialog(login_dialog) != QDialog_Accepted:
                 return
             email = login_dialog.email_input.text()
             password = login_dialog.password_input.text()

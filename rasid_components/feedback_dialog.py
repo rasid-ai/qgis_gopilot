@@ -7,6 +7,7 @@ from .compat import (
     Qt_AlignCenter, Qt_AlignLeft, Qt_PointingHandCursor, Qt_RichText, Qt_TextBrowserInteraction,
     exec_dialog, QMessageBox_Information
 )
+from . import theme_utils
 import platform
 
 
@@ -41,7 +42,8 @@ class FeedbackDialog(QDialog):
         self.setWindowTitle("Feedback")
         self.setMinimumWidth(450)
         self.setMinimumHeight(380)
-        self.setStyleSheet("background: white;")
+        bg_color = theme_utils.get_card_bg()
+        self.setStyleSheet(f"background: {bg_color};")
 
         # Main layout
         main_layout = QVBoxLayout(self)
@@ -51,20 +53,22 @@ class FeedbackDialog(QDialog):
         # Header
         title = QLabel("Provide Feedback")
         title.setAlignment(Qt_AlignCenter)
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50;")
+        text_color = theme_utils.get_text_color()
+        title.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {text_color};")
         main_layout.addWidget(title)
 
         # Subtitle
         subtitle = QLabel("We value your input to improve the platform.")
         subtitle.setAlignment(Qt_AlignCenter)
-        subtitle.setStyleSheet("font-size: 12px; color: #7f8c8d; margin-top: -8px;")
+        secondary_color = theme_utils.get_secondary_text_color()
+        subtitle.setStyleSheet(f"font-size: 12px; color: {secondary_color}; margin-top: -4px;")
         main_layout.addWidget(subtitle)
 
         main_layout.addSpacing(8)
 
         # Star rating section
         rating_label = QLabel("How would you rate your experience?")
-        rating_label.setStyleSheet("font-size: 13px; color: #2c3e50; font-weight: 500;")
+        rating_label.setStyleSheet(f"font-size: 13px; color: {text_color}; font-weight: 500;")
         main_layout.addWidget(rating_label)
 
         # Star buttons
@@ -72,24 +76,25 @@ class FeedbackDialog(QDialog):
         stars_layout.setSpacing(6)
         stars_layout.setAlignment(Qt_AlignLeft)
 
+        border_color = theme_utils.get_card_border()
         for i in range(1, 6):
             star_btn = QPushButton("☆")
             star_btn.setFixedSize(38, 38)
             star_btn.setCursor(Qt_PointingHandCursor)
             star_btn.setProperty("star_value", i)
-            star_btn.setStyleSheet("""
-                QPushButton {
+            star_btn.setStyleSheet(f"""
+                QPushButton {{
                     background: transparent;
-                    border: 2px solid #dce0e3;
+                    border: 2px solid {border_color};
                     border-radius: 6px;
-                    color: #cbd5e0;
+                    color: {secondary_color};
                     font-size: 24px;
                     padding: 0;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     border-color: #FFB800;
                     color: #FFB800;
-                }
+                }}
             """)
             star_btn.clicked.connect(lambda checked, val=i: self._set_rating(val))
             stars_layout.addWidget(star_btn)
@@ -101,24 +106,25 @@ class FeedbackDialog(QDialog):
 
         # Message section
         message_label = QLabel("Your Message *")
-        message_label.setStyleSheet("font-size: 13px; color: #2c3e50; font-weight: 500;")
+        message_label.setStyleSheet(f"font-size: 13px; color: {text_color}; font-weight: 500;")
         main_layout.addWidget(message_label)
 
         self.message_input = QTextEdit()
         self.message_input.setPlaceholderText("Tell us what you like or what we can improve...")
         self.message_input.setMinimumHeight(100)
-        self.message_input.setStyleSheet("""
-            QTextEdit {
-                border: 2px solid #dce0e3;
+        input_bg = theme_utils.get_card_bg()
+        self.message_input.setStyleSheet(f"""
+            QTextEdit {{
+                border: 2px solid {border_color};
                 border-radius: 8px;
                 padding: 10px;
                 font-size: 13px;
-                color: #2c3e50;
-                background: white;
-            }
-            QTextEdit:focus {
-                border-color: #00856F;
-            }
+                color: {text_color};
+                background: {input_bg};
+            }}
+            QTextEdit:focus {{
+                border-color: {theme_utils.BRAND_PRIMARY};
+            }}
         """)
         main_layout.addWidget(self.message_input)
 
@@ -131,40 +137,40 @@ class FeedbackDialog(QDialog):
 
         cancel_btn = QPushButton("Cancel")
         cancel_btn.setCursor(Qt_PointingHandCursor)
-        cancel_btn.setStyleSheet("""
-            QPushButton {
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
                 background: transparent;
-                color: #64748b;
+                color: {secondary_color};
                 border: none;
                 padding: 8px 20px;
                 font-size: 13px;
                 font-weight: 600;
-            }
-            QPushButton:hover {
-                color: #2c3e50;
-            }
+            }}
+            QPushButton:hover {{
+                color: {text_color};
+            }}
         """)
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
 
         self.submit_btn = QPushButton("Submit Feedback")
         self.submit_btn.setCursor(Qt_PointingHandCursor)
-        self.submit_btn.setStyleSheet("""
-            QPushButton {
-                background: #00856F;
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {theme_utils.BRAND_PRIMARY};
                 color: white;
                 border: none;
                 border-radius: 6px;
                 padding: 8px 20px;
                 font-size: 13px;
                 font-weight: 600;
-            }
-            QPushButton:hover {
-                background: #009980;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:hover {{
+                background: {theme_utils.BRAND_HOVER};
+            }}
+            QPushButton:disabled {{
                 background: #bdc3c7;
-            }
+            }}
         """)
         self.submit_btn.clicked.connect(self._submit_feedback)
         btn_layout.addWidget(self.submit_btn)
@@ -174,6 +180,8 @@ class FeedbackDialog(QDialog):
     def _set_rating(self, rating):
         """Update star selection."""
         self._selected_rating = rating
+        border_color = theme_utils.get_card_border()
+        secondary_color = theme_utils.get_secondary_text_color()
         for i, btn in enumerate(self._star_buttons, start=1):
             if i <= rating:
                 # Filled star
@@ -195,19 +203,19 @@ class FeedbackDialog(QDialog):
             else:
                 # Empty star
                 btn.setText("☆")
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background: transparent;
-                        border: 2px solid #dce0e3;
+                        border: 2px solid {border_color};
                         border-radius: 6px;
-                        color: #cbd5e0;
+                        color: {secondary_color};
                         font-size: 24px;
                         padding: 0;
-                    }
-                    QPushButton:hover {
+                    }}
+                    QPushButton:hover {{
                         border-color: #FFB800;
                         color: #FFB800;
-                    }
+                    }}
                 """)
 
     def _submit_feedback(self):

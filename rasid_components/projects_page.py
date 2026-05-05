@@ -11,6 +11,7 @@ from .compat import (
     QMessageBox_Question, QMessageBox_Yes, QMessageBox_No
 )
 from .image_loader import load_image
+from . import theme_utils
 
 LIST_THUMB = 40
 
@@ -123,7 +124,8 @@ class ProjectsPage(QWidget):
         if not projects:
             lbl = QLabel("No projects found.")
             lbl.setAlignment(Qt_AlignCenter)
-            lbl.setStyleSheet("color: #888; font-size: 13px;")
+            secondary_color = theme_utils.get_secondary_text_color()
+            lbl.setStyleSheet(f"color: {secondary_color}; font-size: 13px;")
             self._list_layout.addWidget(lbl)
             return
 
@@ -148,9 +150,12 @@ class ProjectsPage(QWidget):
     def _create_row(self, proj):
         row = QFrame()
         row.setFrameShape(QFrame_StyledPanel)
+        card_bg = theme_utils.get_card_bg()
+        card_border = theme_utils.get_card_border()
+        hover_bg = theme_utils.get_hover_bg()
         row.setStyleSheet(
-            "QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }"
-            "QFrame:hover { background: #e8f5f3; }"
+            f"QFrame {{ background: {card_bg}; border: 1px solid {card_border}; border-radius: 4px; }}"
+            f"QFrame:hover {{ background: {hover_bg}; }}"
         )
         layout = QHBoxLayout(row)
         layout.setContentsMargins(6, 4, 6, 4)
@@ -160,7 +165,8 @@ class ProjectsPage(QWidget):
         thumb = QLabel()
         thumb.setFixedSize(LIST_THUMB, LIST_THUMB)
         thumb.setAlignment(Qt_AlignCenter)
-        thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
+        thumb_bg = theme_utils.get_sidebar_bg()
+        thumb.setStyleSheet(f"background: {thumb_bg}; border-radius: 4px; border: none;")
         load_image(self.client, proj.get("thumbnail"), thumb, self._threads,
                    size=(LIST_THUMB, LIST_THUMB))
         layout.addWidget(thumb)
@@ -170,7 +176,8 @@ class ProjectsPage(QWidget):
         info.setSpacing(3)
 
         name = QLabel(proj.get("title", "Untitled"))
-        name.setStyleSheet("font-weight: bold; font-size: 12px; border: none;")
+        text_color = theme_utils.get_text_color()
+        name.setStyleSheet(f"font-weight: bold; font-size: 12px; border: none; color: {text_color};")
         info.addWidget(name)
 
         # Tags row
@@ -191,14 +198,14 @@ class ProjectsPage(QWidget):
 
         # Open button below tags
         open_btn = QPushButton("Open Project")
-        
+
         open_btn.setFixedSize(120, 17)
-        
+
         open_btn.setCursor(Qt_PointingHandCursor)
         open_btn.setStyleSheet(
-            "QPushButton { background: #00856F; color: white; border: none;"
-            "border-radius: 4px; padding: 4px 8px; font-size: 11px;}"
-            "QPushButton:hover { background: #009980; }"
+            f"QPushButton {{ background: {theme_utils.BRAND_PRIMARY}; color: white; border: none;"
+            f"border-radius: 4px; padding: 4px 8px; font-size: 11px;}}"
+            f"QPushButton:hover {{ background: {theme_utils.BRAND_HOVER}; }}"
         )
         open_btn.clicked.connect(lambda _, p=proj: self.project_opened.emit(p))
         info.addWidget(open_btn, alignment=Qt_AlignLeft)
@@ -207,13 +214,16 @@ class ProjectsPage(QWidget):
 
         # Right: hide button
         del_btn = QPushButton()
-        del_btn.setIcon(create_trash_icon(20, "#e74c3c"))
+        del_btn.setIcon(create_trash_icon(20, theme_utils.BRAND_DANGER))
         del_btn.setCursor(Qt_PointingHandCursor)
         del_btn.setFixedSize(28, 28)
+        btn_bg = theme_utils.get_card_bg()
+        btn_border = theme_utils.get_card_border()
+        danger_hover = theme_utils.get_danger_hover_bg()
         del_btn.setStyleSheet(
-            "QPushButton { background: white; border: 1px solid #ddd;"
-            "border-radius: 4px; padding: 4px; }"
-            "QPushButton:hover { background: #fee; border-color: #e74c3c; }"
+            f"QPushButton {{ background: {btn_bg}; border: 1px solid {btn_border};"
+            f"border-radius: 4px; padding: 4px; }}"
+            f"QPushButton:hover {{ background: {danger_hover}; border-color: {theme_utils.BRAND_DANGER}; }}"
         )
         del_btn.clicked.connect(lambda _, p=proj: self._on_hide(p))
         layout.addWidget(del_btn)

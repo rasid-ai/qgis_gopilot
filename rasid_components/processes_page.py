@@ -13,6 +13,7 @@ from .compat import (
 )
 from .image_loader import load_image
 from .create_process_wizard import CreateProcessWizard
+from . import theme_utils
 
 LIST_THUMB = 40
 DETAIL_THUMB = 280
@@ -197,12 +198,15 @@ class ProcessesPage(QWidget):
 
         # ── Header bar ──
         header = QFrame()
-        header.setStyleSheet("background: #ecf0f1; border-bottom: 1px solid #ccc;")
+        header_bg = theme_utils.get_sidebar_bg()
+        header_border = theme_utils.get_separator_color()
+        header.setStyleSheet(f"background: {header_bg}; border-bottom: 1px solid {header_border};")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(8, 6, 8, 6)
 
         self._title_label = QLabel("")
-        self._title_label.setStyleSheet("font-weight: bold; font-size: 15px;")
+        text_color = theme_utils.get_text_color()
+        self._title_label.setStyleSheet(f"font-weight: bold; font-size: 15px; color: {text_color};")
         header_layout.addWidget(self._title_label)
         header_layout.addStretch()
 
@@ -221,9 +225,9 @@ class ProcessesPage(QWidget):
         self._new_process_btn = QPushButton("+ New Process")
         self._new_process_btn.setCursor(Qt_PointingHandCursor)
         self._new_process_btn.setStyleSheet(
-            "QPushButton { background: #00856F; color: white; border: none;"
-            "border-radius: 4px; padding: 6px 14px; font-weight: bold; }"
-            "QPushButton:hover { background: #009980; }"
+            f"QPushButton {{ background: {theme_utils.BRAND_PRIMARY}; color: white; border: none;"
+            f"border-radius: 4px; padding: 6px 14px; font-weight: bold; }}"
+            f"QPushButton:hover {{ background: {theme_utils.BRAND_HOVER}; }}"
         )
         self._new_process_btn.clicked.connect(self._on_new_process)
         header_layout.addWidget(self._new_process_btn)
@@ -332,7 +336,8 @@ class ProcessesPage(QWidget):
         if not processes:
             lbl = QLabel("No processes yet. Click '+ New Process' to create one.")
             lbl.setAlignment(Qt_AlignCenter)
-            lbl.setStyleSheet("color: #888; font-size: 13px;")
+            secondary_color = theme_utils.get_secondary_text_color()
+            lbl.setStyleSheet(f"color: {secondary_color}; font-size: 13px;")
             self._list_layout.addWidget(lbl)
             self._stop_auto_refresh()
             return
@@ -356,12 +361,16 @@ class ProcessesPage(QWidget):
 
                 # Update row selection styling without triggering detail fetch
                 if self._selected_row:
-                    self._selected_row.setStyleSheet("""
-                        QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }
-                        QFrame:hover { background: #e8f5f3; }
+                    card_bg = theme_utils.get_card_bg()
+                    card_border = theme_utils.get_card_border()
+                    hover_bg = theme_utils.get_hover_bg()
+                    self._selected_row.setStyleSheet(f"""
+                        QFrame {{ background: {card_bg}; border: 1px solid {card_border}; border-radius: 4px; }}
+                        QFrame:hover {{ background: {hover_bg}; }}
                     """)
+                selected_bg = "#d1fae5" if not theme_utils.is_dark_theme() else "#1a4d3f"
                 selected_row.setStyleSheet(
-                    "QFrame { background: #d1fae5; border: 2px solid #00856F; border-radius: 4px; }"
+                    f"QFrame {{ background: {selected_bg}; border: 2px solid {theme_utils.BRAND_PRIMARY}; border-radius: 4px; }}"
                 )
                 self._selected_row = selected_row
 
@@ -440,9 +449,12 @@ class ProcessesPage(QWidget):
         row = QFrame()
         row.setFrameShape(QFrame_StyledPanel)
         row.setCursor(Qt_PointingHandCursor)
-        row.setStyleSheet("""
-            QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }
-            QFrame:hover { background: #e8f5f3; }
+        card_bg = theme_utils.get_card_bg()
+        card_border = theme_utils.get_card_border()
+        hover_bg = theme_utils.get_hover_bg()
+        row.setStyleSheet(f"""
+            QFrame {{ background: {card_bg}; border: 1px solid {card_border}; border-radius: 4px; }}
+            QFrame:hover {{ background: {hover_bg}; }}
         """)
         layout = QHBoxLayout(row)
         layout.setContentsMargins(6, 4, 6, 4)
@@ -451,7 +463,8 @@ class ProcessesPage(QWidget):
         thumb = QLabel()
         thumb.setFixedSize(LIST_THUMB, LIST_THUMB)
         thumb.setAlignment(Qt_AlignCenter)
-        thumb.setStyleSheet("background: #f0f0f0; border-radius: 4px; border: none;")
+        thumb_bg = theme_utils.get_sidebar_bg()
+        thumb.setStyleSheet(f"background: {thumb_bg}; border-radius: 4px; border: none;")
         load_image(self.client, proc.get("thumbnail"), thumb, self._threads,
                    size=(LIST_THUMB, LIST_THUMB))
         layout.addWidget(thumb)
@@ -459,7 +472,8 @@ class ProcessesPage(QWidget):
         info = QVBoxLayout()
         info.setSpacing(2)
         name = QLabel(proc.get("name", "Unnamed"))
-        name.setStyleSheet("font-weight: bold; font-size: 12px; border: none;")
+        text_color = theme_utils.get_text_color()
+        name.setStyleSheet(f"font-weight: bold; font-size: 12px; border: none; color: {text_color};")
         info.addWidget(name)
 
         situation = proc.get("situation", "idle") or "idle"
@@ -474,14 +488,17 @@ class ProcessesPage(QWidget):
         layout.addLayout(info, stretch=1)
 
         hide_btn = QPushButton()
-        hide_btn.setIcon(create_trash_icon(20, "#e74c3c"))
+        hide_btn.setIcon(create_trash_icon(20, theme_utils.BRAND_DANGER))
         hide_btn.setFixedSize(28, 28)
         hide_btn.setCursor(Qt_PointingHandCursor)
         hide_btn.setToolTip("Hide process")
+        btn_bg = theme_utils.get_card_bg()
+        btn_border = theme_utils.get_card_border()
+        danger_hover = theme_utils.get_danger_hover_bg()
         hide_btn.setStyleSheet(
-            "QPushButton { background: white; border: 1px solid #ddd;"
-            "border-radius: 4px; padding: 4px; }"
-            "QPushButton:hover { background: #fee; border-color: #e74c3c; }"
+            f"QPushButton {{ background: {btn_bg}; border: 1px solid {btn_border};"
+            f"border-radius: 4px; padding: 4px; }}"
+            f"QPushButton:hover {{ background: {danger_hover}; border-color: {theme_utils.BRAND_DANGER}; }}"
         )
         hide_btn.clicked.connect(lambda _, p=proc: self._on_hide_process(p))
         layout.addWidget(hide_btn, alignment=Qt_AlignTop)
@@ -491,12 +508,18 @@ class ProcessesPage(QWidget):
 
     def _on_row_clicked(self, proc, row):
         if self._selected_row:
-            self._selected_row.setStyleSheet("""
-                QFrame { background: white; border: 1px solid #e0e0e0; border-radius: 4px; }
-                QFrame:hover { background: #e8f5f3; }
+            # Deselect previous row - restore normal colors
+            card_bg = theme_utils.get_card_bg()
+            card_border = theme_utils.get_card_border()
+            hover_bg = theme_utils.get_hover_bg()
+            self._selected_row.setStyleSheet(f"""
+                QFrame {{ background: {card_bg}; border: 1px solid {card_border}; border-radius: 4px; }}
+                QFrame:hover {{ background: {hover_bg}; }}
             """)
+        # Select new row - highlight with brand color
+        selected_bg = "#d1fae5" if not theme_utils.is_dark_theme() else "#1a4d3f"
         row.setStyleSheet(
-            "QFrame { background: #d1fae5; border: 2px solid #00856F; border-radius: 4px; }"
+            f"QFrame {{ background: {selected_bg}; border: 2px solid {theme_utils.BRAND_PRIMARY}; border-radius: 4px; }}"
         )
         self._selected_row = row
 
@@ -510,7 +533,8 @@ class ProcessesPage(QWidget):
         self._clear_detail()
         loading = QLabel("Loading details...")
         loading.setAlignment(Qt_AlignCenter)
-        loading.setStyleSheet("color: #888; font-size: 13px;")
+        secondary_color = theme_utils.get_secondary_text_color()
+        loading.setStyleSheet(f"color: {secondary_color}; font-size: 13px;")
         self._detail_layout.addWidget(loading)
 
         self._detail_thread = FetchProcessDetailThread(self.client, process_id)
@@ -522,7 +546,7 @@ class ProcessesPage(QWidget):
         self._clear_detail()
         lbl = QLabel(f"Failed to load detail: {msg}")
         lbl.setAlignment(Qt_AlignCenter)
-        lbl.setStyleSheet("color: #e74c3c; font-size: 12px;")
+        lbl.setStyleSheet(f"color: {theme_utils.BRAND_DANGER}; font-size: 12px;")
         self._detail_layout.addWidget(lbl)
 
     # ── Detail panel ──

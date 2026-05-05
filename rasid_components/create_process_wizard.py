@@ -17,6 +17,7 @@ from .compat import (
     Qt_AlignCenter, Qt_PointingHandCursor, Qt_UserRole, QFrame_NoFrame,
     QMessageBox_Yes, QMessageBox_No
 )
+from . import theme_utils
 
 
 # ---------------------------------------------------------------------------
@@ -118,12 +119,15 @@ class CreateProcessWizard(QWidget):
 
         # Title bar
         title_bar = QFrame()
-        title_bar.setStyleSheet("background: #f7f7f7; border-bottom: 1px solid #ddd;")
+        header_bg = theme_utils.get_sidebar_bg()
+        header_border = theme_utils.get_separator_color()
+        title_bar.setStyleSheet(f"background: {header_bg}; border-bottom: 1px solid {header_border};")
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(12, 8, 12, 8)
 
         title_lbl = QLabel(f"New Process — {project_title}")
-        title_lbl.setStyleSheet("font-weight: bold; font-size: 15px;")
+        text_color = theme_utils.get_text_color()
+        title_lbl.setStyleSheet(f"font-weight: bold; font-size: 15px; color: {text_color};")
         title_layout.addWidget(title_lbl)
         title_layout.addStretch()
         outer.addWidget(title_bar)
@@ -147,12 +151,12 @@ class CreateProcessWizard(QWidget):
 
         # Bottom button bar
         btn_bar = QFrame()
-        btn_bar.setStyleSheet("background: #f7f7f7; border-top: 1px solid #ddd;")
+        btn_bar.setStyleSheet(f"background: {header_bg}; border-top: 1px solid {header_border};")
         btn_layout = QHBoxLayout(btn_bar)
         btn_layout.setContentsMargins(12, 8, 12, 8)
 
         self._submit_btn = QPushButton("Create Process")
-        self._submit_btn.setStyleSheet(BTN_STYLE.format(bg="#00856F", hover="#009980"))
+        self._submit_btn.setStyleSheet(BTN_STYLE.format(bg=theme_utils.BRAND_PRIMARY, hover=theme_utils.BRAND_HOVER))
         self._submit_btn.setCursor(Qt_PointingHandCursor)
         self._submit_btn.setEnabled(False)
         self._submit_btn.clicked.connect(self._on_submit)
@@ -160,7 +164,7 @@ class CreateProcessWizard(QWidget):
 
         self._cancel_btn = QPushButton("Cancel")
         self._cancel_btn.setCursor(Qt_PointingHandCursor)
-        self._cancel_btn.setStyleSheet(BTN_STYLE.format(bg="#e74c3c", hover="#c0392b"))
+        self._cancel_btn.setStyleSheet(BTN_STYLE.format(bg=theme_utils.BRAND_DANGER, hover="#c0392b"))
         self._cancel_btn.clicked.connect(self.cancelled.emit)
         btn_layout.addWidget(self._cancel_btn)
 
@@ -381,10 +385,12 @@ class CreateProcessWizard(QWidget):
 
     def _make_group(self, title):
         grp = QGroupBox(title)
+        text_color = theme_utils.get_text_color()
+        border_color = theme_utils.get_card_border()
         grp.setStyleSheet(
-            "QGroupBox { font-weight: bold; border: 1px solid #ddd;"
-            "border-radius: 4px; margin-top: 8px; padding-top: 16px; }"
-            "QGroupBox::title { subcontrol-origin: margin; left: 10px; }"
+            f"QGroupBox {{ font-weight: bold; border: 1px solid {border_color};"
+            f"border-radius: 4px; margin-top: 8px; padding-top: 16px; color: {text_color}; }}"
+            f"QGroupBox::title {{ subcontrol-origin: margin; left: 10px; }}"
         )
         layout = QVBoxLayout()
         grp.setLayout(layout)
