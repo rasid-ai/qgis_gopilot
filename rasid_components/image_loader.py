@@ -6,8 +6,9 @@ from qgis.PyQt.QtWidgets import QLabel
 from qgis.PyQt.QtGui import QPixmap
 from qgis.PyQt.QtCore import QThread, pyqtSignal
 from .compat import Qt_KeepAspectRatio, Qt_SmoothTransformation
+from .config import API_HOST
 
-BASE_URL = "https://api.rasid.ai"
+BASE_URL = API_HOST
 
 # Disk cache directory inside the plugin folder
 _CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".image_cache")

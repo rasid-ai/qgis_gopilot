@@ -1,6 +1,7 @@
 from qgis.PyQt.QtWidgets import QWidget, QVBoxLayout, QLabel, QScrollArea, QFrame
 from .compat import Qt_ScrollBarAlwaysOff, Qt_AlignTop, Qt_AlignCenter, Qt_TextBrowserInteraction, QFrame_NoFrame, QFrame_HLine
 from . import theme_utils
+from .config import APP_BASE_URL
 
 
 class AboutPage(QWidget):
@@ -121,7 +122,7 @@ class AboutPage(QWidget):
 
         # Terms link
         tos = QLabel(
-            f'<a href="https://app.rasid.ai/terms" style="color: {theme_utils.BRAND_PRIMARY}; text-decoration: none;">Terms of Service</a>'
+            f'<a href="{APP_BASE_URL}/terms" style="color: {theme_utils.BRAND_PRIMARY}; text-decoration: none;">Terms of Service</a>'
         )
         tos.setAlignment(Qt_AlignCenter)
         tos.setOpenExternalLinks(True)

@@ -12,6 +12,7 @@ from .compat import (
 )
 from .image_loader import load_image
 from . import theme_utils
+from .config import APP_BASE_URL
 
 LIST_THUMB = 40
 
@@ -241,7 +242,7 @@ class ProjectsPage(QWidget):
             f"Are you sure you want to hide '{title}'?<br><br>"
             "This will move the project to your hidden items. "
             "To permanently delete it, visit:<br>"
-            '<a href="https://app.rasid.ai/hidden-items">https://app.rasid.ai/hidden-items</a>'
+            f'<a href="{APP_BASE_URL}/hidden-items">{APP_BASE_URL}/hidden-items</a>'
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)

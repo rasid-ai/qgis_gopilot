@@ -2,132 +2,145 @@
 import os
 import tempfile
 import requests
-
-TIMEOUT = 15
+from .config import API_BASE_URL, REQUEST_TIMEOUT
 
 class RasidClient:
+    """
+    RASID API Client with API key authentication.
+
+    Authentication:
+    - Set via set_api_key() or load from QSettings
+    - No login required
+    - No CSRF tokens needed
+    - Secure (no password storage)
+    """
+
     def __init__(self):
         self.session = requests.Session()
-        self.base_url = "https://api.rasid.ai/api/"
-        # Set Referer so Django CSRF doesn't reject POST requests
-        self.session.headers["Referer"] = self.base_url
+        self.base_url = API_BASE_URL
+        self.api_key = None  # Will be set via set_api_key() or load_api_key()
 
-    def fetch_csrf_token(self):
-        """Fetch a fresh CSRF token from the dedicated endpoint."""
-        try:
-            response = self.session.get(
-                self.base_url + "auth/csrf/",
-                timeout=TIMEOUT
-            )
-            response.raise_for_status()
-            # Extract token from cookie and set header
-            csrf = self.session.cookies.get("csrftoken_v2")
-            if csrf:
-                self.session.headers["X-CSRFToken"] = csrf
-            return True
-        except Exception:
-            return False
+    # ============================================================================
+    # API KEY AUTHENTICATION (New, Recommended)
+    # ============================================================================
 
-    def _ensure_csrf(self, fetch_if_missing=True):
+    def set_api_key(self, api_key):
         """
-        Ensure CSRF token is set in request headers.
+        Set the API key for authentication.
 
         Args:
-            fetch_if_missing: If True, fetch a fresh token from API if not in cookies.
-                             If False, only use existing cookie.
+            api_key: Your RASID API key (format: rsd_live_... or rsd_test_...)
         """
-        csrf = self.session.cookies.get("csrftoken_v2")
-        if csrf:
-            # Token exists, set it in headers
-            self.session.headers["X-CSRFToken"] = csrf
-        elif fetch_if_missing:
-            # Token missing, fetch a fresh one from API
-            self.fetch_csrf_token()
+        if not api_key:
+            self.api_key = None
+            if "Authorization" in self.session.headers:
+                del self.session.headers["Authorization"]
+            if "X-API-Key" in self.session.headers:
+                del self.session.headers["X-API-Key"]
+            return
 
-    def login(self, username_or_email, password):
-        # Ensure we have a fresh CSRF token before login
-        self._ensure_csrf(fetch_if_missing=True)
+        self.api_key = api_key.strip()
+        # Set Authorization header (preferred method)
+        self.session.headers["Authorization"] = f"Bearer {self.api_key}"
 
-        url = self.base_url + "auth/login/"
-        response = self.session.post(
-            url,
-            json={"email_or_username": username_or_email, "password": password},
-            timeout=TIMEOUT
-        )
-        if response.status_code == 200:
-            self._ensure_csrf(fetch_if_missing=True)
-            return True
+    def save_api_key(self, api_key=None):
+        """
+        Save API key to QSettings for persistent storage.
+
+        Args:
+            api_key: Optional API key to save. If None, saves current self.api_key
+        """
+        from qgis.PyQt.QtCore import QSettings
+        settings = QSettings()
+
+        key_to_save = api_key or self.api_key
+        if key_to_save:
+            settings.setValue("rasid_plugin/api_key", key_to_save)
+            self.set_api_key(key_to_save)
         else:
-            detail = response.json().get("detail", "Login failed")
-            raise Exception(detail)
+            settings.remove("rasid_plugin/api_key")
 
-    def save_cookies(self):
-        """Save session cookies to QSettings."""
+    def load_api_key(self):
+        """
+        Load API key from QSettings.
+
+        Returns:
+            bool: True if API key was loaded, False otherwise
+        """
         from qgis.PyQt.QtCore import QSettings
         settings = QSettings()
-        sessionid = self.session.cookies.get("sessionid_v2", "")
-        csrftoken = self.session.cookies.get("csrftoken_v2", "")
-        if sessionid:
-            settings.setValue("rasid_plugin/sessionid", sessionid)
-        if csrftoken:
-            settings.setValue("rasid_plugin/csrftoken", csrftoken)
+        api_key = settings.value("rasid_plugin/api_key", "")
 
-    def load_cookies(self):
-        """Load session cookies from QSettings."""
+        if api_key:
+            self.set_api_key(api_key)
+            return True
+        return False
+
+    def clear_api_key(self):
+        """Clear API key from session and QSettings."""
         from qgis.PyQt.QtCore import QSettings
         settings = QSettings()
-        sessionid = settings.value("rasid_plugin/sessionid", "")
-        csrftoken = settings.value("rasid_plugin/csrftoken", "")
-        if sessionid:
-            self.session.cookies.set("sessionid_v2", sessionid)
-        if csrftoken:
-            self.session.cookies.set("csrftoken_v2", csrftoken)
-            self.session.headers["X-CSRFToken"] = csrftoken
-        return bool(sessionid and csrftoken)
+        settings.remove("rasid_plugin/api_key")
+        self.set_api_key(None)
 
-    def clear_cookies(self):
-        """Clear cookies from session and QSettings."""
-        from qgis.PyQt.QtCore import QSettings
-        settings = QSettings()
-        settings.remove("rasid_plugin/sessionid")
-        settings.remove("rasid_plugin/csrftoken")
-        self.session.cookies.clear()
+    def has_api_key(self):
+        """Check if an API key is configured."""
+        return bool(self.api_key)
+
+
+    # ============================================================================
+    # AUTHENTICATION STATUS
+    # ============================================================================
 
     def is_authenticated(self):
-        """Test if current session is valid."""
+        """
+        Test if current session/API key is valid.
+
+        Returns:
+            bool: True if authenticated (via API key or session), False otherwise
+        """
         try:
             self.get_profile()
             return True
         except:
             return False
 
+    def get_auth_method(self):
+        """
+        Get the current authentication method.
+
+        Returns:
+            str: 'api_key' or 'none'
+        """
+        if self.api_key:
+            return 'api_key'
+        else:
+            return 'none'
+
     def logout(self):
-        """Logout and invalidate session on server."""
-        self._ensure_csrf(fetch_if_missing=True)
-        try:
-            response = self.session.post(
-                self.base_url + "auth/logout/",
-                timeout=TIMEOUT
-            )
-            response.raise_for_status()
-        except Exception:
-            # Best effort - still clear session locally even if API call fails
-            pass
-        finally:
-            self.clear_cookies()
+        """
+        Logout and clear API key.
+        """
+        self.clear_api_key()
+
+    # ============================================================================
+    # API METHODS
+    # ============================================================================
 
     def get_profile(self):
+        """Get user profile information."""
         response = self.session.get(
             self.base_url + "accounts/profile/",
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
 
     def get_user_projects(self, hidden=False):
+        """Get list of user's projects."""
         params = {"hidden": str(hidden).lower()}
         response = self.session.get(
-            self.base_url + "projects/", params=params, timeout=TIMEOUT
+            self.base_url + "projects/", params=params, timeout=REQUEST_TIMEOUT
         )
         if response.status_code == 200:
             return response.json()
@@ -136,38 +149,39 @@ class RasidClient:
             raise Exception(detail)
 
     def get_solutions(self):
+        """Get list of available solutions."""
         response = self.session.get(
-            self.base_url + "solutions/", timeout=TIMEOUT
+            self.base_url + "solutions/", timeout=REQUEST_TIMEOUT
         )
         response.raise_for_status()
         return response.json()
 
     def get_processes(self, project_slug):
+        """Get list of processes for a project."""
         response = self.session.get(
             self.base_url + "processes/",
             params={"project": project_slug},
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
-        
+
     def create_project(self, solution_slug, title, tags=None):
         """
         Create a new project.
-        
+
         Args:
             solution_slug: Slug of the solution to use
             title: Title for the new project
             tags: Optional list of tag IDs
         """
-        self._ensure_csrf(fetch_if_missing=True)
         payload = {"solution_slug": solution_slug, "title": title}
         if tags:
             payload["tags"] = tags
         response = self.session.post(
             self.base_url + "projects-create/",
             json=payload,
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         if response.status_code == 201:
             return response.json()
@@ -178,9 +192,10 @@ class RasidClient:
             raise Exception(str(detail))
 
     def get_process_config(self, project_slug):
+        """Get process configuration for a project."""
         response = self.session.get(
             self.base_url + f"projects/{project_slug}/process-config/",
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
@@ -198,8 +213,6 @@ class RasidClient:
                 - sentinel_sort_by: string (optional: "---", "leastcc")
         """
         import json
-
-        self._ensure_csrf(fetch_if_missing=True)
 
         # Convert bbox list to JSON string if needed
         if isinstance(payload.get("bbox"), list):
@@ -221,14 +234,12 @@ class RasidClient:
     def create_process(self, project_slug, payload, files=None):
         """
         Create a new process under a project.
-        
+
         Args:
             project_slug: Project slug
             payload: Dict with process creation data (see CreateProcessInputSerializer)
             files: Optional dict of files (e.g., {'upload_raster': file_handle})
         """
-        self._ensure_csrf(fetch_if_missing=True)
-        
         # When sending files, we must use multipart/form-data (data=, not json=)
         # Temporarily remove Content-Type header to let requests set it automatically
         headers = {}
@@ -236,13 +247,13 @@ class RasidClient:
             # Let requests set Content-Type with proper boundary
             if "Content-Type" in self.session.headers:
                 headers["Content-Type"] = None
-        
+
         response = self.session.post(
             self.base_url + f"projects/{project_slug}/processes/",
             data=payload,
             files=files,
             headers=headers or None,
-            timeout=120 if files else TIMEOUT,
+            timeout=120 if files else REQUEST_TIMEOUT,
         )
         if response.status_code == 201:
             return response.json()
@@ -254,11 +265,10 @@ class RasidClient:
 
     def hide_process(self, project_slug, process_id):
         """Hide a process (soft delete)."""
-        self._ensure_csrf(fetch_if_missing=True)
         response = self.session.post(
             self.base_url + f"projects/{project_slug}/processes/{process_id}/hide/",
             json={},  # Send empty JSON body
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         # FIXED: Handle both 200 and 204 responses without trying to parse empty body
         if response.status_code in (200, 204):
@@ -274,11 +284,10 @@ class RasidClient:
 
     def hide_project(self, project_slug):
         """Hide a project (soft delete)."""
-        self._ensure_csrf(fetch_if_missing=True)
         response = self.session.post(
             self.base_url + f"projects/{project_slug}/hide/",
             json={},  # Send empty JSON body
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         # FIXED: Handle both 200 and 204 responses without trying to parse empty body
         if response.status_code in (200, 204):
@@ -297,11 +306,11 @@ class RasidClient:
         response = self.session.get(
             self.base_url + "process/detail/",
             params={"id": process_id},
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
-    
+
     def submit_feedback(self, feedback_data):
         """
         Submit user feedback to the API.
@@ -316,14 +325,12 @@ class RasidClient:
         Returns:
             dict: Created feedback object with id, system_registration_date, etc.
         """
-        self._ensure_csrf(fetch_if_missing=True)
-
         response = self.session.post(
             self.base_url + "accounts/feedback/",
             json=feedback_data,
-            timeout=TIMEOUT,
+            timeout=REQUEST_TIMEOUT,
         )
-        
+
         if response.status_code == 201:
             return response.json()
         else:
@@ -340,7 +347,7 @@ class RasidClient:
                     # If JSON parsing fails, use raw text
                     detail = f"Server error ({response.status_code}): {response.text[:200]}"
             raise Exception(str(detail))
-        
+
     def download_file(self, url, dest_dir=None):
         """
         Download a file from the API and save it locally with path traversal protection.
