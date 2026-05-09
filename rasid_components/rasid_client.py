@@ -256,8 +256,7 @@ class RasidClient:
             payload["bbox"] = json.dumps(payload["bbox"])
 
         # Build workspace URL from base URL (remove /api/ suffix)
-        base = self.base_url.replace("/api/", "/")
-        url = base + "workspace/sentinel2_catalogue/"
+        url = self.base_url + "sentinel2-catalogue/"
 
         response = self.session.post(
             url,
