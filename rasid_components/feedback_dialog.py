@@ -8,6 +8,7 @@ from .compat import (
     exec_dialog, QMessageBox_Information
 )
 from . import theme_utils
+from .config import APP_BASE_URL
 import platform
 
 
@@ -264,7 +265,7 @@ class FeedbackDialog(QDialog):
             "Your feedback has been submitted successfully.<br><br>"
             "We appreciate you taking the time to help us improve!<br><br>"
             "To view and manage all your feedbacks, visit:<br>"
-            '<a href="https://app.rasid.ai/feedback">https://app.rasid.ai/feedback</a>'
+            f'<a href="{APP_BASE_URL}/feedback">{APP_BASE_URL}/feedback</a>'
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)

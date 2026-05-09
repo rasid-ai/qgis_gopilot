@@ -4,12 +4,14 @@ from qgis.PyQt.QtWidgets import (
     QDialog, QLineEdit, QLabel, QPushButton, QVBoxLayout,
     QHBoxLayout, QFrame
 )
-from qgis.PyQt.QtGui import QPixmap
+from qgis.PyQt.QtGui import QPixmap, QDesktopServices
+from qgis.PyQt.QtCore import QUrl
 from .compat import (
     Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor,
     QLineEdit_Password, QLineEdit_Normal
 )
 from . import theme_utils
+from .config import API_HOST, APP_BASE_URL
 
 
 class LoginDialog(QDialog):
@@ -81,29 +83,34 @@ class LoginDialog(QDialog):
         right_layout.setSpacing(0)
 
         # Form title
-        form_title = QLabel("Sign In")
+        form_title = QLabel("Connect to RASID")
         text_color = theme_utils.get_text_color()
         form_title.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {text_color}; margin-bottom: 10px;")
         right_layout.addWidget(form_title)
 
-        form_subtitle = QLabel("Enter your credentials to continue")
+        form_subtitle = QLabel("Enter your API key to continue")
         secondary_color = theme_utils.get_secondary_text_color()
         form_subtitle.setStyleSheet(f"font-size: 13px; color: {secondary_color}; margin-bottom: 30px;")
         right_layout.addWidget(form_subtitle)
 
         right_layout.addSpacing(20)
 
-        # Email field
-        self.email_label = QLabel("Email Address")
+        # API Key field
+        self.api_key_label = QLabel("API Key")
         text_color = theme_utils.get_text_color()
-        self.email_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 12px; margin-bottom: 6px;")
-        right_layout.addWidget(self.email_label)
+        self.api_key_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 12px; margin-bottom: 6px;")
+        right_layout.addWidget(self.api_key_label)
 
-        self.email_input = QLineEdit()
-        self.email_input.setPlaceholderText("Enter your email")
+        # API Key row with input + eye button
+        api_key_row = QHBoxLayout()
+        api_key_row.setSpacing(8)
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setEchoMode(QLineEdit_Password)
+        self.api_key_input.setPlaceholderText("rsd_...")
         input_bg = theme_utils.get_card_bg()
         border_color = theme_utils.get_card_border()
-        self.email_input.setStyleSheet(f"""
+        self.api_key_input.setStyleSheet(f"""
             QLineEdit {{
                 padding: 12px 14px;
                 border: 2px solid {border_color};
@@ -116,39 +123,7 @@ class LoginDialog(QDialog):
                 border: 2px solid {theme_utils.BRAND_PRIMARY};
             }}
         """)
-        right_layout.addWidget(self.email_input)
-
-        right_layout.addSpacing(16)
-
-        # Password field
-        self.password_label = QLabel("Password")
-        text_color = theme_utils.get_text_color()
-        self.password_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 12px; margin-bottom: 6px;")
-        right_layout.addWidget(self.password_label)
-
-        # Password row with input + eye button
-        pass_row = QHBoxLayout()
-        pass_row.setSpacing(8)
-
-        self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit_Password)
-        self.password_input.setPlaceholderText("Enter your password")
-        input_bg = theme_utils.get_card_bg()
-        border_color = theme_utils.get_card_border()
-        self.password_input.setStyleSheet(f"""
-            QLineEdit {{
-                padding: 12px 14px;
-                border: 2px solid {border_color};
-                border-radius: 6px;
-                font-size: 13px;
-                background: {input_bg};
-                color: {text_color};
-            }}
-            QLineEdit:focus {{
-                border: 2px solid {theme_utils.BRAND_PRIMARY};
-            }}
-        """)
-        pass_row.addWidget(self.password_input)
+        api_key_row.addWidget(self.api_key_input)
 
         self._eye_btn = QPushButton("👁")
         self._eye_btn.setFixedSize(48, 48)
@@ -167,16 +142,42 @@ class LoginDialog(QDialog):
                 background: {eye_hover};
             }}
         """)
-        self._eye_btn.setToolTip("Show password")
-        self._eye_btn.clicked.connect(self._toggle_password)
-        pass_row.addWidget(self._eye_btn)
+        self._eye_btn.setToolTip("Show API key")
+        self._eye_btn.clicked.connect(self._toggle_api_key_visibility)
+        api_key_row.addWidget(self._eye_btn)
 
-        right_layout.addLayout(pass_row)
+        right_layout.addLayout(api_key_row)
+
+        right_layout.addSpacing(16)
+
+        # Get API Key button
+        self.get_key_btn = QPushButton("Get API Key from Web")
+        self.get_key_btn.setCursor(Qt_PointingHandCursor)
+        button_bg = theme_utils.get_sidebar_bg()
+        button_hover = theme_utils.get_hover_bg()
+        self.get_key_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {button_bg};
+                color: {text_color};
+                border: 2px solid {border_color};
+                border-radius: 6px;
+                padding: 12px;
+                font-weight: bold;
+                font-size: 13px;
+            }}
+            QPushButton:hover {{
+                background: {button_hover};
+            }}
+        """)
+        self.get_key_btn.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl(f"{APP_BASE_URL}/api-keys"))
+        )
+        right_layout.addWidget(self.get_key_btn)
 
         right_layout.addSpacing(24)
 
-        # Login button
-        self.login_button = QPushButton("Sign In")
+        # Connect button
+        self.login_button = QPushButton("Connect")
         self.login_button.setCursor(Qt_PointingHandCursor)
         self.login_button.setStyleSheet(f"""
             QPushButton {{
@@ -204,7 +205,7 @@ class LoginDialog(QDialog):
         secondary_color = theme_utils.get_secondary_text_color()
         signup_label = QLabel(
             'Don\'t have an account? '
-            f'<a href="https://app.rasid.ai/auth?active_form=register" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: none;">Sign up</a>'
+            f'<a href="{APP_BASE_URL}/auth?active_form=register" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: none;">Sign up</a>'
         )
         signup_label.setOpenExternalLinks(True)
         signup_label.setAlignment(Qt_AlignCenter)
@@ -215,15 +216,12 @@ class LoginDialog(QDialog):
 
         main_layout.addWidget(right_panel, stretch=3)
 
-        self.session_id = None
-        self.token = None
-
-    def _toggle_password(self):
-        if self.password_input.echoMode() == QLineEdit_Password:
-            self.password_input.setEchoMode(QLineEdit_Normal)
+    def _toggle_api_key_visibility(self):
+        if self.api_key_input.echoMode() == QLineEdit_Password:
+            self.api_key_input.setEchoMode(QLineEdit_Normal)
             self._eye_btn.setText("🙈")
-            self._eye_btn.setToolTip("Hide password")
+            self._eye_btn.setToolTip("Hide API key")
         else:
-            self.password_input.setEchoMode(QLineEdit_Password)
+            self.api_key_input.setEchoMode(QLineEdit_Password)
             self._eye_btn.setText("👁")
-            self._eye_btn.setToolTip("Show password")
+            self._eye_btn.setToolTip("Show API key")

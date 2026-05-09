@@ -20,6 +20,7 @@ from .rasid_components.processes_page import ProcessesPage
 from .rasid_components.feedback_dialog import FeedbackDialog
 from .rasid_components.about_page import AboutPage
 from .rasid_components import theme_utils
+from .rasid_components.config import APP_BASE_URL
 
 SIDEBAR_WIDTH = 190
 
@@ -279,8 +280,8 @@ class RasidPluginDialog(QDialog):
         last = profile.get("last_name", "")
         name = f"{first} {last}".strip() or profile.get("email", "User")
         text_color = theme_utils.get_text_color()
-        self._welcome_label.setText(f'<a href="https://app.rasid.ai/profile" style="color: {text_color}; font-weight: bold; text-decoration: underline;">Welcome, {name}</a>')
+        self._welcome_label.setText(f'<a href="{APP_BASE_URL}/profile" style="color: {text_color}; font-weight: bold; text-decoration: underline;">Welcome, {name}</a>')
 
         balance = data.get("balance", {})
         amount = balance.get("amount", 0)
-        self._balance_label.setText(f'<a href="https://app.rasid.ai/payment/refill" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: underline;">Credits: €{amount}</a>')
+        self._balance_label.setText(f'<a href="{APP_BASE_URL}/payment/refill" style="color: {theme_utils.BRAND_PRIMARY}; font-weight: bold; text-decoration: underline;">Credits: €{amount}</a>')

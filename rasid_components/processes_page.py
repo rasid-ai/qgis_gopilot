@@ -14,6 +14,7 @@ from .compat import (
 from .image_loader import load_image
 from .create_process_wizard import CreateProcessWizard
 from . import theme_utils
+from .config import APP_BASE_URL
 
 LIST_THUMB = 40
 DETAIL_THUMB = 280
@@ -896,7 +897,7 @@ class ProcessesPage(QWidget):
         msg_box.setText(
             f'Are you sure you want to hide "{process_name}"?<br><br>'
             "This will hide the process. To fully delete it, visit:<br>"
-            '<a href="https://app.rasid.ai/hidden-items">https://app.rasid.ai/hidden-items</a>'
+            f'<a href="{APP_BASE_URL}/hidden-items">{APP_BASE_URL}/hidden-items</a>'
         )
         msg_box.setTextFormat(Qt_RichText)
         msg_box.setTextInteractionFlags(Qt_TextBrowserInteraction)

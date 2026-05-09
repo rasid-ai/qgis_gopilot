@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QThread, pyqtSignal
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
@@ -30,28 +30,8 @@ from .rasid_plugin_dialog import RasidPluginDialog
 from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.compat import exec_dialog, QDialog_Accepted
 from .rasid_components.rasid_client import RasidClient
-from qgis.PyQt.QtWidgets import QMessageBox, QProgressDialog
+from qgis.PyQt.QtWidgets import QMessageBox
 import os.path
-import keyring
-
-
-class LoginThread(QThread):
-    """Runs login in a background thread so QGIS stays responsive."""
-    success = pyqtSignal()
-    failed = pyqtSignal(str)
-
-    def __init__(self, client, email, password):
-        super().__init__()
-        self.client = client
-        self.email = email
-        self.password = password
-
-    def run(self):
-        try:
-            self.client.login(self.email, self.password)
-            self.success.emit()
-        except Exception as e:
-            self.failed.emit(str(e))
 
 
 class RasidPlugin:
@@ -129,81 +109,35 @@ class RasidPlugin:
         self.dlg.show()
         exec_dialog(self.dlg)
 
-    def _do_login(self, email, password, save_credentials=False):
-        """Run login on a background thread with a progress dialog."""
-        self.client = RasidClient()
-
-        progress = QProgressDialog("Logging in...", "Cancel", 0, 0, self.iface.mainWindow())
-        progress.setWindowTitle("Rasid")
-        progress.setCancelButton(None)
-        progress.setMinimumDuration(0)
-        progress.show()
-
-        self._login_thread = LoginThread(self.client, email, password)
-        self._login_success = False
-        self._login_save = save_credentials
-        self._login_email = email
-        self._login_password = password
-
-        def on_success():
-            progress.close()
-            self._login_success = True
-            if self._login_save:
-                settings = QSettings()
-                settings.setValue("rasid_plugin/email", self._login_email)
-                # Store password securely in system keychain
-                keyring.set_password("rasid_plugin", self._login_email, self._login_password)
-            # Save session cookies for next time
-            self.client.save_cookies()
-            self._show_main_dialog()
-
-        def on_failed(msg):
-            progress.close()
-            self.client = None
-            if self._login_save:
-                # Clear invalid saved credentials
-                settings = QSettings()
-                email = settings.value("rasid_plugin/email", "")
-                if email:
-                    try:
-                        keyring.delete_password("rasid_plugin", email)
-                    except:
-                        pass
-                settings.remove("rasid_plugin/email")
-            QMessageBox.critical(self.iface.mainWindow(), "Login Failed", msg)
-
-        self._login_thread.success.connect(on_success)
-        self._login_thread.failed.connect(on_failed)
-        self._login_thread.start()
-
     def run(self):
-        # Try to reuse existing session first
+        # Initialize client
         self.client = RasidClient()
-        if self.client.load_cookies() and self.client.is_authenticated():
-            # Session still valid, skip login!
+
+        # Try to load saved API key first
+        if self.client.load_api_key() and self.client.is_authenticated():
+            # API key is valid, proceed to main dialog
             self._show_main_dialog()
             return
 
-        # Session invalid or missing - need to login
-        settings = QSettings()
-        email = settings.value("rasid_plugin/email", "")
-        password = None
+        # No valid API key - show login dialog
+        login_dialog = LoginDialog()
+        if exec_dialog(login_dialog) != QDialog_Accepted:
+            return
 
-        if email:
-            # Retrieve password from secure keychain
-            try:
-                password = keyring.get_password("rasid_plugin", email)
-            except:
-                password = None
+        # Get API key from dialog
+        api_key = login_dialog.api_key_input.text().strip()
 
-        if email and password:
-            # Auto-login with saved credentials
-            self._do_login(email, password, save_credentials=True)
+        if not api_key:
+            QMessageBox.warning(self.iface.mainWindow(), "Error", "Please enter an API key")
+            return
+
+        # Set and validate API key
+        self.client.set_api_key(api_key)
+
+        if self.client.is_authenticated():
+            # Save valid API key
+            self.client.save_api_key()
+            self._show_main_dialog()
         else:
-            # Show login dialog
-            login_dialog = LoginDialog()
-            if exec_dialog(login_dialog) != QDialog_Accepted:
-                return
-            email = login_dialog.email_input.text()
-            password = login_dialog.password_input.text()
-            self._do_login(email, password, save_credentials=True)
+            QMessageBox.critical(self.iface.mainWindow(), "Authentication Failed", "Invalid or revoked API key")
+            self.client = None
