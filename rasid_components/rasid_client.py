@@ -45,43 +45,79 @@ class RasidClient:
 
     def save_api_key(self, api_key=None):
         """
-        Save API key to QSettings for persistent storage.
+        Save API key to OS secure credential storage.
+
+        Uses the keyring library which automatically selects the appropriate
+        secure backend for the current OS (Windows Credential Manager, macOS
+        Keychain, Linux Secret Service, etc.). All backends provide encryption.
+
+        This is more secure than QSettings which stores in plaintext.
 
         Args:
             api_key: Optional API key to save. If None, saves current self.api_key
         """
-        from qgis.PyQt.QtCore import QSettings
-        settings = QSettings()
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
+        import keyring
+
+        SERVICE_NAME = "rasid_plugin"
+        USERNAME = "api_key"
 
         key_to_save = api_key or self.api_key
         if key_to_save:
-            settings.setValue("rasid_plugin/api_key", key_to_save)
+            # Save to secure OS credential storage
+            keyring.set_password(SERVICE_NAME, USERNAME, key_to_save)
             self.set_api_key(key_to_save)
         else:
-            settings.remove("rasid_plugin/api_key")
+            # Delete from secure storage
+            try:
+                keyring.delete_password(SERVICE_NAME, USERNAME)
+            except keyring.errors.PasswordDeleteError:
+                pass  # Key didn't exist, that's fine
 
     def load_api_key(self):
         """
-        Load API key from QSettings.
+        Load API key from OS secure credential storage.
+
+        Automatically uses the appropriate backend for your OS.
 
         Returns:
             bool: True if API key was loaded, False otherwise
         """
-        from qgis.PyQt.QtCore import QSettings
-        settings = QSettings()
-        api_key = settings.value("rasid_plugin/api_key", "")
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
+        import keyring
 
-        if api_key:
-            self.set_api_key(api_key)
-            return True
+        SERVICE_NAME = "rasid_plugin"
+        USERNAME = "api_key"
+
+        try:
+            api_key = keyring.get_password(SERVICE_NAME, USERNAME)
+            if api_key:
+                self.set_api_key(api_key)
+                return True
+        except Exception:
+            pass  # Keyring not available or no key stored
+
         return False
 
     def clear_api_key(self):
-        """Clear API key from session and QSettings."""
-        from qgis.PyQt.QtCore import QSettings
-        settings = QSettings()
-        settings.remove("rasid_plugin/api_key")
+        """Clear API key from session and OS secure credential storage."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
+        import keyring
+
+        SERVICE_NAME = "rasid_plugin"
+        USERNAME = "api_key"
+
+        # Clear from session
         self.set_api_key(None)
+
+        # Clear from secure storage
+        try:
+            keyring.delete_password(SERVICE_NAME, USERNAME)
+        except keyring.errors.PasswordDeleteError:
+            pass  # Key didn't exist, that's fine
 
     def has_api_key(self):
         """Check if an API key is configured."""
