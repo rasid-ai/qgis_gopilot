@@ -27,11 +27,7 @@ Run remote sensing and geospatial analysis directly in QGIS without local comput
 3. Create a project and select a solution
 4. Run processes on your area of interest
 
-## License
-
-We need to add one ! 
-
 ## Contact
 
-- Website: https://rasid.ai/
+- Website: https://app.rasid.ai/
 - Email: info@rasid.ai
