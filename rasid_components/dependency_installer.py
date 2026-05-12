@@ -10,7 +10,7 @@ import importlib.util
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QMessageBox
 from qgis.PyQt.QtCore import QThread, pyqtSignal
 from qgis.PyQt.QtGui import QFont
-from .compat import Qt_RichText, Qt_PointingHandCursor
+from .compat import Qt_RichText, Qt_PointingHandCursor, exec_dialog, QDialog_Accepted
 from . import theme_utils
 
 
@@ -309,9 +309,9 @@ class DependencyManager:
 
         # Show installation dialog
         dialog = DependencyInstallerDialog(missing, parent)
-        result = dialog.exec_()
+        result = exec_dialog(dialog)
 
-        if result == QDialog.Accepted:
+        if result == QDialog_Accepted:
             # Verify installation was successful
             all_installed, still_missing = DependencyManager.check_dependencies()
             if not all_installed:
