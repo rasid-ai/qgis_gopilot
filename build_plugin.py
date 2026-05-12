@@ -28,6 +28,8 @@ FILES_TO_COPY = [
     "resources.py",
     "icon.png",
     "icon_nobg.png",
+    "LICENSE",
+    "README.md",
 ]
 
 # Directories to include
