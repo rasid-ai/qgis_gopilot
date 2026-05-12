@@ -151,7 +151,7 @@ class LoginDialog(QDialog):
         right_layout.addSpacing(16)
 
         # Get API Key button
-        self.get_key_btn = QPushButton("Get API Key from Web")
+        self.get_key_btn = QPushButton("Get My API Key")
         self.get_key_btn.setCursor(Qt_PointingHandCursor)
         button_bg = theme_utils.get_sidebar_bg()
         button_hover = theme_utils.get_hover_bg()
