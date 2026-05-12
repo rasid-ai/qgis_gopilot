@@ -30,4 +30,4 @@ Run remote sensing and geospatial analysis directly in QGIS without local comput
 ## Contact
 
 - Website: https://app.rasid.ai/
-- Email: info@rasid.ai
+- Email: qgis@rasid.ai
