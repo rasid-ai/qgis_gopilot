@@ -30,6 +30,7 @@ from .rasid_plugin_dialog import RasidPluginDialog
 from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.compat import exec_dialog, QDialog_Accepted
 from .rasid_components.rasid_client import RasidClient
+from .rasid_components.dependency_installer import DependencyManager
 from qgis.PyQt.QtWidgets import QMessageBox
 import os.path
 
@@ -110,6 +111,15 @@ class RasidPlugin:
         exec_dialog(self.dlg)
 
     def run(self):
+        # Check and install dependencies first
+        if not DependencyManager.prompt_install(self.iface.mainWindow()):
+            QMessageBox.warning(
+                self.iface.mainWindow(),
+                "Dependencies Required",
+                "Required libraries are not installed. The plugin cannot run without them."
+            )
+            return
+
         # Initialize client
         self.client = RasidClient()
 

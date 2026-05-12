@@ -11,11 +11,14 @@ Run remote sensing and geospatial analysis directly in QGIS without local comput
 1. Download the plugin ZIP file
 2. In QGIS: **Plugins → Manage and Install Plugins → Install from ZIP**
 3. Select the ZIP file and install
+4. On first launch, the plugin will prompt you to install required Python libraries (keyring)
+5. Click **Install** to automatically install dependencies
 
 ## Requirements
 
 - QGIS 3.0 or higher
-- Internet connection
+- Python 3.7 or higher
+- Internet connection for API access and dependency installation
 
 ## Usage
 

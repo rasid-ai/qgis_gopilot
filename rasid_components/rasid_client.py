@@ -56,9 +56,11 @@ class RasidClient:
         Args:
             api_key: Optional API key to save. If None, saves current self.api_key
         """
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
-        import keyring
+        try:
+            import keyring
+        except ImportError:
+            # Keyring not installed yet, skip saving
+            return
 
         SERVICE_NAME = "rasid_plugin"
         USERNAME = "api_key"
@@ -84,9 +86,11 @@ class RasidClient:
         Returns:
             bool: True if API key was loaded, False otherwise
         """
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
-        import keyring
+        try:
+            import keyring
+        except ImportError:
+            # Keyring not installed yet
+            return False
 
         SERVICE_NAME = "rasid_plugin"
         USERNAME = "api_key"
@@ -103,9 +107,12 @@ class RasidClient:
 
     def clear_api_key(self):
         """Clear API key from session and OS secure credential storage."""
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "libs"))
-        import keyring
+        try:
+            import keyring
+        except ImportError:
+            # Keyring not installed, just clear session
+            self.set_api_key(None)
+            return
 
         SERVICE_NAME = "rasid_plugin"
         USERNAME = "api_key"

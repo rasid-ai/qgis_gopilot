@@ -1,8 +1,10 @@
 # login dialog UI
 import os
+import sys
+import subprocess
 from qgis.PyQt.QtWidgets import (
     QDialog, QLineEdit, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QFrame
+    QHBoxLayout, QFrame, QMessageBox
 )
 from qgis.PyQt.QtGui import QPixmap, QDesktopServices
 from qgis.PyQt.QtCore import QUrl
@@ -151,7 +153,7 @@ class LoginDialog(QDialog):
         right_layout.addSpacing(16)
 
         # Get API Key button
-        self.get_key_btn = QPushButton("Get API Key from Web")
+        self.get_key_btn = QPushButton("Get API Key")
         self.get_key_btn.setCursor(Qt_PointingHandCursor)
         button_bg = theme_utils.get_sidebar_bg()
         button_hover = theme_utils.get_hover_bg()
@@ -212,9 +214,34 @@ class LoginDialog(QDialog):
         signup_label.setStyleSheet(f"color: {secondary_color}; font-size: 12px;")
         right_layout.addWidget(signup_label)
 
+        # TESTING: Uninstall keyring button (comment/uncomment for testing)
+        # self._add_uninstall_button(right_layout)
+
         right_layout.addStretch()
 
         main_layout.addWidget(right_panel, stretch=3)
+
+    def _add_uninstall_button(self, layout):
+        """Add uninstall button for testing purposes."""
+        layout.addSpacing(30)
+        uninstall_btn = QPushButton("🗑 Uninstall Keyring (Testing)")
+        uninstall_btn.setCursor(Qt_PointingHandCursor)
+        uninstall_btn.setStyleSheet("""
+            QPushButton {
+                background: #7f1d1d;
+                color: white;
+                border: 2px solid #991b1b;
+                border-radius: 6px;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background: #991b1b;
+            }
+        """)
+        uninstall_btn.clicked.connect(self._uninstall_keyring)
+        layout.addWidget(uninstall_btn)
 
     def _toggle_api_key_visibility(self):
         if self.api_key_input.echoMode() == QLineEdit_Password:
@@ -225,3 +252,74 @@ class LoginDialog(QDialog):
             self.api_key_input.setEchoMode(QLineEdit_Password)
             self._eye_btn.setText("👁")
             self._eye_btn.setToolTip("Show API key")
+
+    def _uninstall_keyring(self):
+        """Uninstall keyring package for testing purposes."""
+        reply = QMessageBox.question(
+            self,
+            "Uninstall Keyring",
+            "This will uninstall the keyring package.\nAre you sure?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            # Find Python executable (same logic as installer)
+            qgis_path = sys.executable
+
+            if os.name == 'nt':  # Windows
+                qgis_dir = os.path.dirname(qgis_path)
+                python_candidates = [
+                    os.path.join(qgis_dir, "python3.exe"),
+                    os.path.join(qgis_dir, "python.exe"),
+                    os.path.join(qgis_dir, "..", "bin", "python3.exe"),
+                    os.path.join(qgis_dir, "..", "bin", "python.exe"),
+                ]
+                python_exe = None
+                for candidate in python_candidates:
+                    if os.path.exists(candidate):
+                        python_exe = candidate
+                        break
+                if not python_exe:
+                    python_exe = "python3"
+            else:  # Linux/Mac
+                python_exe = "python3"
+
+            # Build uninstall command
+            cmd = [python_exe, "-m", "pip", "uninstall", "keyring", "-y"]
+
+            # Run uninstall (hide console window on Windows)
+            startupinfo = None
+            if os.name == 'nt':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                startupinfo=startupinfo
+            )
+
+            if result.returncode == 0:
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    "Keyring uninstalled successfully!\n\nRestart QGIS to test the install dialog."
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Uninstall Failed",
+                    f"Failed to uninstall keyring:\n{result.stderr}"
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Error uninstalling keyring:\n{str(e)}"
+            )
