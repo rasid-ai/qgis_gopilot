@@ -10,7 +10,7 @@ from qgis.PyQt.QtGui import QPixmap, QDesktopServices
 from qgis.PyQt.QtCore import QUrl
 from .compat import (
     Qt_AlignCenter, Qt_KeepAspectRatio, Qt_SmoothTransformation, Qt_PointingHandCursor,
-    QLineEdit_Password, QLineEdit_Normal
+    QLineEdit_Password, QLineEdit_Normal, QMessageBox_Yes, QMessageBox_No
 )
 from . import theme_utils
 from .config import API_HOST, APP_BASE_URL
@@ -259,10 +259,10 @@ class LoginDialog(QDialog):
             self,
             "Uninstall Keyring",
             "This will uninstall the keyring package.\nAre you sure?",
-            QMessageBox.Yes | QMessageBox.No
+            QMessageBox_Yes | QMessageBox_No
         )
 
-        if reply != QMessageBox.Yes:
+        if reply != QMessageBox_Yes:
             return
 
         try:
