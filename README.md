@@ -22,9 +22,9 @@ Run remote sensing and geospatial analysis directly in QGIS without local comput
 
 ## Usage
 
-1. Click the Rasid icon in the toolbar
-2. Login with your credentials
-3. Create a project and select a solution
+1. Click the RASID icon in the toolbar
+2. Sign Up to generate an API Key
+3. Select a solution and create your first project
 4. Run processes on your area of interest
 
 ## Contact
