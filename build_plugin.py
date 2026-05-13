@@ -30,6 +30,7 @@ FILES_TO_COPY = [
     "icon_nobg.png",
     "LICENSE",
     "README.md",
+    "rasid_logo.svg"
 ]
 
 # Directories to include

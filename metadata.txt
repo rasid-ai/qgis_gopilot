@@ -3,18 +3,18 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Rasid
+name=GoPilot 
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Run cloud-based geospatial analysis and satellite workflows from Rasid. 
-version=0.1
+version=0.2
 author=RASID 
 email=info@rasid.ai
 
 about=Run cloud-based geospatial analysis and satellite processing workflows from Rasid directly within QGIS, enabling users to access advanced remote sensing tools without local computation. Fetch imagery from well-known satellite providers such as Sentinel-1, Sentinel-2, Mapbox, and Planet, or use your own data. Select your area of interest and apply AI-powered models for tasks including cloud detection, wheat detection, banana field monitoring, and scene parsing. The plugin simplifies complex workflows into an easy-to-use interface, allowing users to quickly generate insights, maps, and ready-to-use geospatial outputs.
 
-tracker=https://github.com/rasid-ai/rasid_plugin/issues
-repository=https://github.com/rasid-ai/rasid_plugin
+tracker=https://github.com/rasid-ai/qgis_gopilot/issues
+repository=https://github.com/rasid-ai/qgis_gopilot
 # End of mandatory metadata
 
 # Recommended items:
@@ -28,7 +28,7 @@ tags=python
 
 homepage=https://rasid.ai/
 category=Plugins
-icon=icon.png
+icon=rasid_logo.svg
 # experimental flag
 experimental=True
 
