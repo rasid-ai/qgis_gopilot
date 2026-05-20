@@ -8,11 +8,15 @@ Run remote sensing and geospatial analysis directly in QGIS without local comput
 
 ## Installation
 
-1. Download the plugin ZIP file
-2. In QGIS: **Plugins → Manage and Install Plugins → Install from ZIP**
-3. Select the ZIP file and install
-4. On first launch, the plugin will prompt you to install required Python libraries (keyring)
-5. Click **Install** to automatically install dependencies
+1. Open QGIS
+2. Go to **Plugins → Manage and Install Plugins**
+3. Search for **GoPilot**
+4. Click **Install Plugin**
+5. Launch the plugin from the toolbar or Plugins menu
+
+On first launch, the plugin may prompt you to install required Python dependencies such as `keyring`.
+
+Click **Install** to complete the setup automatically.
 
 ## Requirements
 
