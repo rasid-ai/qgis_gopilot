@@ -86,10 +86,16 @@ class RasidPluginDialog(QDialog):
         logo_label.setAlignment(Qt_AlignCenter)
         logo_label.setFixedHeight(90)
         logo_path = os.path.join(os.path.dirname(__file__), 'logo.png')
+        logo_loaded = False
+
         if os.path.exists(logo_path):
             pm = QPixmap(logo_path)
-            logo_label.setPixmap(pm.scaled(80, 80, Qt_KeepAspectRatio, Qt_SmoothTransformation))
-        else:
+            if not pm.isNull() and pm.width() > 0 and pm.height() > 0:
+                scaled_pm = pm.scaled(80, 80, Qt_KeepAspectRatio, Qt_SmoothTransformation)
+                logo_label.setPixmap(scaled_pm)
+                logo_loaded = True
+
+        if not logo_loaded:
             logo_label.setText("RASID")
             text_color = theme_utils.get_text_color()
             logo_label.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {text_color};")
