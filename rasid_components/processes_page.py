@@ -19,17 +19,30 @@ from .config import APP_BASE_URL
 LIST_THUMB = 40
 DETAIL_THUMB = 280
 
-# Only three user-facing states: Completed (green), Failed (red), Preparing (blue)
+# Status display mappings
 _COMPLETED = ("Completed", "#00856F")
 _FAILED = ("Failed", "#e74c3c")
-_PREPARING = ("Preparing", "#1E293B")
+_INFERENCE = ("Inference", "#3B82F6")      # Blue for inference
+_PREPARATION = ("Preparation", "#6366F1")  # Indigo for preparation/creating
 
 SITUATION_LABELS = {
+    # Completed states
     "is": _COMPLETED,
     "done": _COMPLETED,
+
+    # Failed states
     "if": _FAILED,
     "failed": _FAILED,
     "pdmf": _FAILED,
+
+    # Inference states
+    "i": _INFERENCE,
+    "inference": _INFERENCE,
+
+    # Preparation states
+    "c": _PREPARATION,
+    "creating": _PREPARATION,
+    "idle": _PREPARATION,
 }
 
 
@@ -405,10 +418,14 @@ class ProcessesPage(QWidget):
     # ── Auto-refresh logic (completely invisible to user) ──
 
     def _has_preparing_processes(self):
-        """Check if any processes are still preparing (not completed or failed)."""
+        """Check if any processes are still in progress (not completed or failed)."""
         for proc in self._current_processes:
             situation = proc.get("situation", "")
-            # If situation is not in SITUATION_LABELS, it's "Preparing"
+            # Keep refreshing if process is in Preparation ('c') or Inference ('i')
+            # Stop refreshing only when all processes are Completed ('is') or Failed ('if', 'failed', 'pdmf')
+            if situation in ('c', 'i', 'creating', 'inference', 'idle'):
+                return True
+            # Also refresh if situation is unknown/not mapped
             if situation not in SITUATION_LABELS:
                 return True
         return False
@@ -478,7 +495,7 @@ class ProcessesPage(QWidget):
         info.addWidget(name)
 
         situation = proc.get("situation", "idle") or "idle"
-        label_text, color = SITUATION_LABELS.get(situation, _PREPARING)
+        label_text, color = SITUATION_LABELS.get(situation, _PREPARATION)
         badge = QLabel(label_text)
         badge.setFixedHeight(16)
         badge.setStyleSheet(
@@ -626,7 +643,7 @@ class ProcessesPage(QWidget):
 
             # 2. Update status badge
             situation = proc.get("situation", "idle") or "idle"
-            label_text, color = SITUATION_LABELS.get(situation, _PREPARING)
+            label_text, color = SITUATION_LABELS.get(situation, _PREPARATION)
             self._status_badge.setText(label_text)
             self._status_badge.setStyleSheet(
                 f"color: white; background: {color}; border-radius: 4px;"
@@ -730,7 +747,7 @@ class ProcessesPage(QWidget):
 
         # Situation badge
         situation = proc.get("situation", "idle") or "idle"
-        label_text, color = SITUATION_LABELS.get(situation, _PREPARING)
+        label_text, color = SITUATION_LABELS.get(situation, _PREPARATION)
         badge = QLabel(label_text)
         badge.setFixedHeight(22)
         badge.setStyleSheet(

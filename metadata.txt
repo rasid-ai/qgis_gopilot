@@ -30,7 +30,7 @@ homepage=https://github.com/rasid-ai/qgis_gopilot/blob/main/README.md
 category=Plugins
 icon=rasid_logo.svg
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False

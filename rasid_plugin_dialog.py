@@ -182,7 +182,7 @@ class RasidPluginDialog(QDialog):
 
         # Connect page navigation signals
         self.projects_page.project_opened.connect(self.show_processes)
-        self.solutions_page.project_created.connect(lambda _: self.show_projects())
+        self.solutions_page.project_created.connect(self.show_processes)
 
         # Fetch profile
         self._profile_thread = None

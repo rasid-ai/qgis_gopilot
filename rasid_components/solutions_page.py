@@ -19,9 +19,9 @@ def strip_html(text):
         return ""
     return re.sub(r'<[^>]+>', '', text).strip()
 
-CARD_WIDTH = 240
-THUMB_SIZE = 200
-MAX_COLS = 3
+CARD_WIDTH = 260
+THUMB_SIZE = 220
+CARD_MIN_MARGIN = 40  # Minimum margin on each side
 
 
 class FetchSolutionsThread(QThread):
@@ -66,6 +66,7 @@ class SolutionsPage(QWidget):
         super().__init__(parent)
         self.client = client
         self._threads = []
+        self._solutions = []
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -77,9 +78,23 @@ class SolutionsPage(QWidget):
 
         self._inner = QWidget()
         self.grid = QGridLayout(self._inner)
-        self.grid.setSpacing(12)
+        self.grid.setSpacing(16)
+        self.grid.setContentsMargins(20, 20, 20, 20)
         self.grid.setAlignment(Qt_AlignTop | Qt_AlignHCenter)
         self.scroll.setWidget(self._inner)
+
+    def resizeEvent(self, event):
+        """Recalculate grid layout when window is resized."""
+        super().resizeEvent(event)
+        if self._solutions:
+            self._layout_cards()
+
+    def _calculate_columns(self):
+        """Calculate how many columns can fit based on current width."""
+        available_width = self.scroll.viewport().width() - (CARD_MIN_MARGIN * 2)
+        spacing = self.grid.spacing()
+        cols = max(1, int((available_width + spacing) / (CARD_WIDTH + spacing)))
+        return cols
 
     def load_solutions(self):
         self._clear_grid()
@@ -94,6 +109,7 @@ class SolutionsPage(QWidget):
 
     def _on_solutions_loaded(self, solutions):
         self._clear_grid()
+
         if not solutions:
             lbl = QLabel("No solutions found.")
             lbl.setAlignment(Qt_AlignCenter)
@@ -101,17 +117,27 @@ class SolutionsPage(QWidget):
             return
 
         # Sort solutions: "prod" status first, "coming soon" last
-        sorted_solutions = sorted(
+        self._solutions = sorted(
             solutions,
             key=lambda s: (s.get("status", "") != "prod", s.get("name", ""))
         )
 
+        self._layout_cards()
+
+    def _layout_cards(self):
+        """Layout cards in grid based on current width."""
+        self._clear_grid()
+        if not self._solutions:
+            return
+
+        cols = self._calculate_columns()
         row, col = 0, 0
-        for sol in sorted_solutions:
+
+        for sol in self._solutions:
             card = self._create_card(sol)
             self.grid.addWidget(card, row, col)
             col += 1
-            if col >= MAX_COLS:
+            if col >= cols:
                 col = 0
                 row += 1
 
