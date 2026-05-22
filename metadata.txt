@@ -26,7 +26,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=https://github.com/rasid-ai/qgis_gopilot/blob/main/README.md
+homepage=https://github.com/rasid-ai/qgis_gopilot#readme
 category=Plugins
 icon=rasid_logo.svg
 # experimental flag
