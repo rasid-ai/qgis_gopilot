@@ -30,6 +30,7 @@ FILES_TO_COPY = [
     "icon_nobg.png",
     "LICENSE",
     "README.md",
+    "logo.png"
     "rasid_logo.svg"
 ]
 
