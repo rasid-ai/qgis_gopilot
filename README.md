@@ -7,7 +7,12 @@ GoPilot is an AI assistant for geospatial and Earth Observation workflows that i
 Built by RASID, GoPilot connects operational EO workflows with modern AI capabilities, helping users move faster from raw satellite imagery to actionable geospatial insights.
 
 ---
-https://github.com/user-attachments/assets/11789540-cb64-4ce3-8aa4-eee00a45ba18
+
+<p align="center">
+  <video width="100%" controls>
+    <source src="https://github.com/user-attachments/assets/11789540-cb64-4ce3-8aa4-eee00a45ba18" type="video/mp4">
+  </video>
+</p>
 
 ## Why GoPilot?
 
