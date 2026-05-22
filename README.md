@@ -8,11 +8,7 @@ Built by RASID, GoPilot connects operational EO workflows with modern AI capabil
 
 ---
 
-<p align="center">
-  <video width="100%" controls>
-    <source src="https://github.com/user-attachments/assets/11789540-cb64-4ce3-8aa4-eee00a45ba18" type="video/mp4">
-  </video>
-</p>
+[![GoPilot Demo](assets/gopilot_preview.gif)](https://github.com/user-attachments/assets/11789540-cb64-4ce3-8aa4-eee00a45ba18)
 
 ## Why GoPilot?
 
