@@ -1,2 +1,11 @@
+# QGIS GoPilot Plugin Dependencies
+#
+# These packages are installed in an isolated virtual environment at:
+# qgis_gopilot/qgis_rasid_venv/venv_pyX.Y/
+#
+# This keeps the QGIS Python environment clean and avoids conflicts.
+# Add new dependencies here - they will be automatically detected and installed on plugin startup.
+
 keyring>=23.0.0
 requests>=2.25.0
+markdown>=3.3.0

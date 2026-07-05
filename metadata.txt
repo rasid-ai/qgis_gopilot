@@ -24,7 +24,7 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=AI, satellite, remote sensing, earth observation, cloud processing, machine learning, sentinel, analysis, geospatial, imagery, raster, planet, mapbox, copernicus, EO, workflow, automation
 
 homepage=https://github.com/rasid-ai/qgis_gopilot#readme
 category=Plugins
