@@ -19,8 +19,10 @@ from .rasid_components.projects_page import ProjectsPage
 from .rasid_components.processes_page import ProcessesPage
 from .rasid_components.feedback_dialog import FeedbackDialog
 from .rasid_components.about_page import AboutPage
+from .rasid_components.gopilot_page import GoPilotPage
 from .rasid_components import theme_utils
 from .rasid_components.config import APP_BASE_URL
+from .rasid_components.logger import debug_print
 
 SIDEBAR_WIDTH = 190
 
@@ -134,6 +136,7 @@ class RasidPluginDialog(QDialog):
 
         # Navigation buttons
         self._nav_buttons = []
+        self.btn_gopilot = self._make_nav_btn("GoPilot", sidebar_layout)
         self.btn_solutions = self._make_nav_btn("Solutions", sidebar_layout)
         self.btn_projects = self._make_nav_btn("Projects", sidebar_layout)
 
@@ -169,17 +172,20 @@ class RasidPluginDialog(QDialog):
         main_layout.addWidget(self.stacked_widget, stretch=1)
 
         # Create pages
+        self.gopilot_page = GoPilotPage(self.client, self.iface)
         self.solutions_page = SolutionsPage(self.client)
         self.projects_page = ProjectsPage(self.client)
         self.processes_page = ProcessesPage(self.client, self.iface)
         self.about_page = AboutPage()
 
+        self.stacked_widget.addWidget(self.gopilot_page)
         self.stacked_widget.addWidget(self.solutions_page)
         self.stacked_widget.addWidget(self.projects_page)
         self.stacked_widget.addWidget(self.processes_page)
         self.stacked_widget.addWidget(self.about_page)
 
         # Connect sidebar buttons
+        self.btn_gopilot.clicked.connect(self.show_gopilot)
         self.btn_solutions.clicked.connect(self.show_solutions)
         self.btn_projects.clicked.connect(self.show_projects)
         self.btn_feedback.clicked.connect(self.show_feedback)
@@ -220,6 +226,10 @@ class RasidPluginDialog(QDialog):
                     bg="transparent", fg=text_color, hover=hover_bg
                 ))
 
+    def show_gopilot(self):
+        self.stacked_widget.setCurrentWidget(self.gopilot_page)
+        self._set_active_btn(self.btn_gopilot)
+
     def show_solutions(self):
         self.solutions_page.load_solutions()
         self.stacked_widget.setCurrentWidget(self.solutions_page)
@@ -240,7 +250,9 @@ class RasidPluginDialog(QDialog):
         # Detect current page
         current_widget = self.stacked_widget.currentWidget()
         page_name = "unknown"
-        if current_widget == self.solutions_page:
+        if current_widget == self.gopilot_page:
+            page_name = "gopilot"
+        elif current_widget == self.solutions_page:
             page_name = "solutions"
         elif current_widget == self.projects_page:
             page_name = "projects"
@@ -255,6 +267,34 @@ class RasidPluginDialog(QDialog):
     def show_about(self):
         self.stacked_widget.setCurrentWidget(self.about_page)
         self._set_active_btn(self.btn_about)
+
+    def _cleanup_pages(self):
+        """Stop background threads and release the map tool held by pages.
+
+        Child widgets do NOT receive a closeEvent when this modal dialog
+        closes, so GoPilotPage.cleanup() would otherwise never run — leaving
+        its SendMessageThread(s) and the active QGIS map tool alive after the
+        widgets are gone, which leads to use-after-free crashes.
+        """
+        page = getattr(self, "gopilot_page", None)
+        if page is not None and hasattr(page, "cleanup"):
+            try:
+                page.cleanup()
+            except Exception as e:
+                debug_print(f"[RASID] GoPilot cleanup failed: {e}")
+
+        thread = getattr(self, "_profile_thread", None)
+        if thread is not None:
+            try:
+                if thread.isRunning():
+                    thread.quit()
+                    thread.wait(1000)
+            except RuntimeError:
+                pass
+
+    def closeEvent(self, event):
+        self._cleanup_pages()
+        super().closeEvent(event)
 
     def do_logout(self):
         from qgis.PyQt.QtCore import QSettings
@@ -272,12 +312,13 @@ class RasidPluginDialog(QDialog):
             except:
                 pass
         settings.remove("rasid_plugin/email")
+        self._cleanup_pages()
         self.reject()
 
     def _fetch_profile(self):
         self._profile_thread = FetchProfileThread(self.client)
         self._profile_thread.finished.connect(self._on_profile_loaded)
-        self._profile_thread.error.connect(lambda msg: print(f"[RASID] Profile fetch failed: {msg}"))
+        self._profile_thread.error.connect(lambda msg: debug_print(f"[RASID] Profile fetch failed: {msg}"))
         self._profile_thread.start()
 
     def _on_profile_loaded(self, data):

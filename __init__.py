@@ -33,6 +33,10 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-    #
+    # Add venv to sys.path if it exists (but don't check/install packages yet)
+    # Package installation happens when user clicks the plugin icon (see rasid_plugin.py run() method)
+    from .rasid_components.dependencies import venv_manager
+    venv_manager.ensure_venv_packages_available()
+
     from .rasid_plugin import RasidPlugin
     return RasidPlugin(iface)

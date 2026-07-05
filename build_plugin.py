@@ -31,7 +31,8 @@ FILES_TO_COPY = [
     "LICENSE",
     "README.md",
     "logo.png",
-    "rasid_logo.svg"
+    "rasid_logo.svg",
+    "requirements.txt",  # read at runtime by venv_manager to know what to install
 ]
 
 # Directories to include

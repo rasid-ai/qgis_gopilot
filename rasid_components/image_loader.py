@@ -7,6 +7,7 @@ from qgis.PyQt.QtGui import QPixmap
 from qgis.PyQt.QtCore import QThread, pyqtSignal
 from .compat import Qt_KeepAspectRatio, Qt_SmoothTransformation
 from .config import API_HOST
+from .logger import debug_print
 
 BASE_URL = API_HOST
 
@@ -73,8 +74,10 @@ class FetchImageThread(QThread):
             if r.status_code == 200 and r.content:
                 _write_cache(self.url, r.content)
                 self.finished.emit(self.label, r.content)
-        except Exception:
-            pass
+            else:
+                debug_print(f"[image_loader] Thread: Failed - status {r.status_code}, content length {len(r.content) if r.content else 0}")
+        except Exception as e:
+            debug_print(f"[image_loader] Thread: Exception - {type(e).__name__}: {e}")
 
 
 def load_image(client, url, label, threads_list, size=None):
