@@ -148,18 +148,26 @@ def get_venv_site_packages(venv_dir: Optional[str] = None) -> str:
 
 
 def venv_exists(venv_dir: Optional[str] = None) -> bool:
-    """Check if the plugin's virtual environment exists and has a Python executable.
+    """Check if the plugin's package directory is present.
+
+    Packages are installed with the BASE interpreter via ``pip --target`` (the
+    venv's own pip is unreliable on QGIS Windows builds), so a populated
+    site-packages directory is sufficient — even if the venv interpreter is
+    missing or non-functional.
 
     Args:
         venv_dir: Path to the venv directory. Defaults to get_venv_dir().
 
     Returns:
-        True if the venv directory and Python executable exist.
+        True if the directory exists and has either a Python executable or a
+        site-packages directory.
     """
     if venv_dir is None:
         venv_dir = get_venv_dir()
+    if not os.path.isdir(venv_dir):
+        return False
     python_path = get_venv_python_path(venv_dir)
-    return os.path.isdir(venv_dir) and os.path.isfile(python_path)
+    return os.path.isfile(python_path) or os.path.isdir(get_venv_site_packages(venv_dir))
 
 
 def venv_python_usable(venv_dir: Optional[str] = None) -> Tuple[bool, str]:
@@ -191,10 +199,9 @@ def _add_venv_to_path() -> bool:
         True if site-packages was added or already present, False if venv
         does not exist.
     """
-    if not venv_exists():
-        return False
-
     site_packages = get_venv_site_packages()
+    if not os.path.isdir(site_packages):
+        return False
     if site_packages not in sys.path:
         sys.path.insert(0, site_packages)
     return True
@@ -312,67 +319,47 @@ def python_runtime_error() -> str:
 
 
 def check_dependencies() -> List[dict]:
-    """Check if required Python packages are installed in the venv.
+    """Check whether each required package is importable.
+
+    A package counts as satisfied if it is importable from anywhere on
+    sys.path — the plugin's own target folder (added here) OR QGIS's own Python
+    (e.g. ``requests`` usually ships with QGIS). This avoids reinstalling what
+    QGIS already provides, and avoids the ``pip --target`` "already satisfied"
+    skip from ever causing a re-prompt loop.
 
     Returns:
         List of dicts with keys: name, pip_name, installed, version, error.
-        error is populated when the package is not installed in venv.
     """
-    # Get fresh list of required packages from requirements.txt
     required_packages = get_required_packages()
 
-    # If venv doesn't exist, ALL packages are missing
-    if not venv_exists():
-        return [
-            {
-                "name": import_name,
-                "pip_name": pip_name,
-                "installed": False,
-                "version": None,
-                "error": "Virtual environment does not exist"
-            }
-            for import_name, pip_name in required_packages
-        ]
-
-    # Venv exists - add it to path and check if packages are in venv
+    # Make the plugin's target folder importable before probing.
     _add_venv_to_path()
+
     results = []
     for import_name, pip_name in required_packages:
-        info = {
+        discoverable, err = _dependency_discoverable(import_name)
+        results.append({
             "name": import_name,
             "pip_name": pip_name,
-            "installed": False,
-            "version": None,
-            "error": None,
-        }
-
-        # Check if package is installed specifically in the venv
-        if _package_in_venv(import_name, pip_name):
-            info["installed"] = True
-            info["version"] = _dependency_version(pip_name) or "installed"
-        else:
-            info["error"] = f"Not installed in venv"
-
-        results.append(info)
+            "installed": discoverable,
+            "version": _dependency_version(pip_name) if discoverable else None,
+            "error": None if discoverable else (err or "not importable"),
+        })
     return results
 
 
 def all_dependencies_met() -> bool:
-    """Return True if venv exists and all required packages are installed in it.
+    """Return True if every required package is importable.
 
     Returns:
-        True if venv exists and all dependencies are installed in the venv.
+        True if all dependencies can be imported (from the target folder or
+        from QGIS's own Python).
     """
-    # If venv doesn't exist, dependencies are NOT met
-    if not venv_exists():
-        return False
-
     _add_venv_to_path()
-    # Get fresh list of required packages
     required_packages = get_required_packages()
     return all(
-        _package_in_venv(import_name, pip_name)
-        for import_name, pip_name in required_packages
+        _dependency_discoverable(import_name)[0]
+        for import_name, _pip_name in required_packages
     )
 
 
@@ -398,8 +385,14 @@ def _get_clean_env() -> dict:
         A copy of os.environ with problematic variables removed.
     """
     env = os.environ.copy()
-    for var in ["PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"]:
-        env.pop(var, None)
+    # IMPORTANT: preserve PYTHONHOME / PYTHONPATH. On Windows (OSGeo4W) the
+    # bundled QGIS interpreter relies on them to locate its own standard library
+    # and site-packages (where pip lives). Stripping them makes `python -m pip`
+    # fail with "No module named pip" / "Could not find platform independent
+    # libraries" — which is exactly why running pip from the OSGeo4W Shell works
+    # but a stripped subprocess does not. Only drop VIRTUAL_ENV so pip does not
+    # think it is inside some other virtual environment.
+    env.pop("VIRTUAL_ENV", None)
     env["PYTHONIOENCODING"] = "utf-8"
     return env
 
@@ -415,6 +408,60 @@ def _get_subprocess_kwargs() -> dict:
     if sys.platform == "win32":
         return {"creationflags": subprocess.CREATE_NO_WINDOW}
     return {}
+
+
+def _ensure_base_pip(
+    python_exe: str,
+    progress_callback: Optional[Callable[[str], None]] = None,
+) -> Tuple[bool, str]:
+    """Ensure the BASE interpreter can run pip, bootstrapping it if necessary.
+
+    QGIS almost always ships pip with its Python, so the first check usually
+    passes. If not, we try ``ensurepip`` on the base interpreter (which — unlike
+    a freshly created venv — can locate its own standard library).
+
+    Returns:
+        Tuple of (ok, error_message). error_message is empty when ok is True.
+    """
+    env = _get_clean_env()
+    kwargs = _get_subprocess_kwargs()
+
+    def _pip_ok() -> bool:
+        try:
+            r = subprocess.run(
+                [python_exe, "-m", "pip", "--version"],
+                capture_output=True, text=True, timeout=60, env=env, **kwargs,
+            )
+            return r.returncode == 0
+        except Exception:
+            return False
+
+    if _pip_ok():
+        return True, ""
+
+    if progress_callback:
+        progress_callback("Bootstrapping pip (ensurepip)...")
+    try:
+        subprocess.run(
+            [python_exe, "-m", "ensurepip", "--upgrade"],
+            capture_output=True, text=True, timeout=180, env=env, **kwargs,
+        )
+    except Exception:
+        pass
+
+    if _pip_ok():
+        return True, ""
+
+    return False, (
+        "pip is not available in the QGIS Python interpreter and could not be "
+        "bootstrapped automatically.\n\n"
+        f"Interpreter: {python_exe}\n\n"
+        "Install pip manually, then retry:\n"
+        "  - Windows: open the OSGeo4W Shell and run\n"
+        f'      python -m ensurepip --upgrade\n'
+        "  - Linux: run\n"
+        f'      "{python_exe}" -m ensurepip --upgrade'
+    )
 
 
 def _python_executable_names() -> List[str]:
@@ -661,51 +708,45 @@ def create_venv(venv_dir: str, progress_callback: Optional[Callable[[str], None]
         raise RuntimeError(python_runtime_error())
 
     os.makedirs(os.path.dirname(venv_dir), exist_ok=True)
-
-    python_path = get_venv_python_path(venv_dir)
+    site_packages = get_venv_site_packages(venv_dir)
     env = _get_clean_env()
     kwargs = _get_subprocess_kwargs()
 
-    # Find Python executable
+    # Best effort: create a venv WITHOUT pip. Creating it *with* pip runs
+    # ensurepip inside the fresh venv, which fails on some QGIS Windows builds
+    # ("Could not find platform independent libraries <prefix>"). We never use
+    # the venv's own pip anyway — packages are installed with the base
+    # interpreter via `pip --target` — so `--without-pip` is all we need.
     try:
         python_exe = _find_python_executable()
-    except RuntimeError as exc:
-        raise RuntimeError(
-            "Could not create virtual environment: no working Python interpreter found.\n\n"
-            + str(exc)
-        )
-
-    # Create venv using subprocess
-    cmd = [python_exe, "-m", "venv", venv_dir]
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=120,
-        env=env,
-        **kwargs,
-    )
-
-    if result.returncode == 0 and os.path.isfile(python_path):
         if progress_callback:
-            progress_callback("Virtual environment created successfully!")
-        return _verify_pip_and_return(python_path)
+            progress_callback("Creating package environment...")
+        result = subprocess.run(
+            [python_exe, "-m", "venv", "--without-pip", venv_dir],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+            **kwargs,
+        )
+        if result.returncode == 0:
+            if progress_callback:
+                progress_callback("Package environment ready.")
+        elif progress_callback:
+            progress_callback(
+                "venv unavailable; falling back to a plain package folder."
+            )
+    except Exception as exc:
+        # No interpreter, or venv module unavailable — fall back to a plain dir.
+        if progress_callback:
+            progress_callback(
+                f"venv unavailable ({exc}); using a plain package folder."
+            )
 
-    # Failed - clean up and raise error
-    _cleanup_partial_venv(venv_dir)
-
-    error_output = result.stderr or result.stdout or "Unknown error"
-    if len(error_output) > 500:
-        error_output = error_output[:500] + "\n..."
-
-    raise RuntimeError(
-        "Failed to create virtual environment.\n\n"
-        "You can install dependencies manually:\n"
-        "  pip install keyring requests markdown\n\n"
-        f"Error: {error_output}\n"
-        f"Python: {python_exe}\n"
-        f"Target: {venv_dir}"
-    )
+    # Guarantee the target folder exists even if `venv` did not run or failed.
+    # A plain directory on sys.path is enough for `pip --target` + imports.
+    os.makedirs(site_packages, exist_ok=True)
+    return get_venv_python_path(venv_dir)
 
 
 def install_packages(
@@ -723,27 +764,34 @@ def install_packages(
     Returns:
         Tuple of (success, message).
     """
-    python_path = get_venv_python_path(venv_dir)
+    site_packages = get_venv_site_packages(venv_dir)
+    os.makedirs(site_packages, exist_ok=True)
     env = _get_clean_env()
     kwargs = _get_subprocess_kwargs()
 
-    usable, reason = venv_python_usable(venv_dir)
-    if not usable:
-        return (
-            False,
-            "Virtual environment Python is not usable. Re-run dependency "
-            f"installation to recreate it.\nPython path: {python_path}\n"
-            f"Error: {reason}",
-        )
+    # Install with the BASE interpreter's pip into the target folder. This
+    # sidesteps the venv's own pip, which does not exist (created with
+    # --without-pip) and is unreliable on QGIS Windows anyway.
+    try:
+        python_exe = _find_python_executable()
+    except RuntimeError as exc:
+        return False, str(exc)
+
+    ok, reason = _ensure_base_pip(python_exe, progress_callback)
+    if not ok:
+        return False, reason
 
     pip_cmd = [
-        python_path,
+        python_exe,
         "-m",
         "pip",
         "install",
         "--upgrade",
+        "--no-cache-dir",
         "--disable-pip-version-check",
         "--prefer-binary",
+        "--target",
+        site_packages,
     ] + packages
 
     if progress_callback:
@@ -779,7 +827,7 @@ class DepsInstallWorker(QThread):
         super().__init__(parent)
 
     def run(self):
-        """Execute venv creation and dependency installation."""
+        """Create the package directory and install dependencies into it."""
         try:
             if not python_runtime_supported():
                 self.finished.emit(False, python_runtime_error())
@@ -787,48 +835,26 @@ class DepsInstallWorker(QThread):
 
             venv_dir = get_venv_dir()
 
-            # Step 1: Create venv if needed, or recreate stale broken venvs
+            # Step 1: prepare the package directory (venv --without-pip, or a
+            # plain folder if venv is not possible on this platform/build).
+            self.progress.emit("Preparing package environment...")
             try:
-                _ensure_usable_venv(
+                create_venv(
                     venv_dir,
                     progress_callback=lambda m: self.progress.emit(m),
                 )
             except RuntimeError as e:
                 self.finished.emit(False, str(e))
                 return
-            self.progress.emit("Virtual environment ready.")
 
-            # Step 2: Verify pip
-            self.progress.emit("Verifying pip...")
-            python_path = get_venv_python_path(venv_dir)
-            env = _get_clean_env()
-            kwargs = _get_subprocess_kwargs()
-
-            result = subprocess.run(
-                [python_path, "-m", "pip", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                env=env,
-                **kwargs,
-            )
-            if result.returncode != 0:
-                self.finished.emit(
-                    False,
-                    "pip is not available in the virtual environment.\n"
-                    "Please install dependencies manually:\n"
-                    "pip install keyring requests markdown",
-                )
-                return
-            self.progress.emit("pip ready.")
-
-            # Step 3: Install missing packages
+            # Step 2: install only the packages that are not already importable
+            # (QGIS ships some, e.g. requests). Install them into the target
+            # folder with the base interpreter's pip (--target).
+            ensure_venv_packages_available()
             missing = get_missing_packages()
             if not missing:
-                self.finished.emit(
-                    True,
-                    "All dependencies are already installed.",
-                )
+                self.progress.emit("All dependencies already available.")
+                self.finished.emit(True, "All dependencies are already available.")
                 return
 
             self.progress.emit(f"Installing: {', '.join(missing)}...")
@@ -842,20 +868,18 @@ class DepsInstallWorker(QThread):
                 return
             self.progress.emit("Packages installed.")
 
-            # Step 4: Add venv to sys.path
+            # Step 3: put the folder on sys.path and verify imports resolve.
             self.progress.emit("Configuring package paths...")
             ensure_venv_packages_available()
 
-            # Step 5: Verify imports
-            self.progress.emit("Verifying installations...")
+            self.progress.emit("Verifying installation...")
             still_missing = get_missing_packages()
-
             if still_missing:
                 self.finished.emit(
                     False,
-                    f"The following packages could not be verified: "
+                    "These packages could not be verified after install: "
                     f"{', '.join(still_missing)}.\n"
-                    "You may need to restart QGIS for changes to take effect.",
+                    "Please restart QGIS and try again.",
                 )
             else:
                 self.progress.emit("All dependencies installed!")
@@ -887,41 +911,32 @@ def setup_venv_and_install(
 
         venv_dir = get_venv_dir()
 
-        # Create venv if it doesn't exist or recreate if broken
+        # Prepare the package directory (venv --without-pip, or a plain folder).
         try:
-            _ensure_usable_venv(venv_dir, progress_callback)
+            create_venv(venv_dir, progress_callback)
         except RuntimeError as e:
             return False, str(e)
 
-        if progress_callback:
-            progress_callback("Virtual environment ready.")
-
-        # Add to sys.path
+        # Install only the packages that are not already importable, into the
+        # target folder via the base interpreter's pip.
         ensure_venv_packages_available()
-
-        # Check what's missing
         missing = get_missing_packages()
         if not missing:
             return True, "All packages already installed!"
-
-        # Install missing packages
         success, message = install_packages(venv_dir, missing, progress_callback)
+        if not success:
+            return False, message
 
-        if success:
-            # Verify installation
-            ensure_venv_packages_available()
-            still_missing = get_missing_packages()
-
-            if still_missing:
-                return False, (
-                    f"Installation completed but packages not found: "
-                    f"{', '.join(still_missing)}.\n"
-                    "You may need to restart QGIS."
-                )
-
-            return True, "All packages installed successfully!"
-
-        return False, message
+        # Verify installation.
+        ensure_venv_packages_available()
+        still_missing = get_missing_packages()
+        if still_missing:
+            return False, (
+                f"Installation completed but packages not found: "
+                f"{', '.join(still_missing)}.\n"
+                "You may need to restart QGIS."
+            )
+        return True, "All packages installed successfully!"
 
     except Exception as e:
         return False, f"Unexpected error: {str(e)}"

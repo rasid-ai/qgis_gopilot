@@ -182,17 +182,33 @@ def _style_code_blocks(html_text, dark_text=True):
 
 
 def _style_tables(html_text):
-    """Inline-style tables so they render properly with borders and styling."""
+    """Inline-style tables with theme-aware colors so they read in both modes.
+
+    QLabel rich text does not apply an external stylesheet to inner HTML, and it
+    honors ``background-color`` (not the ``background`` shorthand) on cells — so
+    colors must be set inline, per cell. Previously these were hardcoded to dark
+    text on a light background, which made table text unreadable in dark mode
+    (dark text on the dark bubble). Colors now come from theme_utils.
+    """
+    text_color = theme_utils.get_text_color()
+    border_color = theme_utils.get_card_border()
+    cell_bg = theme_utils.get_sidebar_bg()
+    header_bg = theme_utils.get_hover_bg()
+
     # Style the table element
-    table = ('<table style="border-collapse:collapse; width:100%; margin:10px 0; '
-             'border:1px solid #ccc; background:#f9f9f9; font-size:12px;">')
+    table = (f'<table style="border-collapse:collapse; width:100%; margin:10px 0; '
+             f'border:1px solid {border_color}; background-color:{cell_bg}; '
+             f'font-size:12px;">')
 
     # Style table headers
-    th = ('<th style="background:#e8e8e8; color:#333; font-weight:bold; '
-          'text-align:left; padding:8px 10px; border:1px solid #bbb;">')
+    th = (f'<th style="background-color:{header_bg}; color:{text_color}; '
+          f'font-weight:bold; text-align:left; padding:8px 10px; '
+          f'border:1px solid {border_color};">')
 
-    # Style table cells
-    td = '<td style="padding:6px 10px; border:1px solid #ddd; color:#2c3e50;">'
+    # Style table cells (set background-color per cell so they are never
+    # transparent over a dark bubble)
+    td = (f'<td style="background-color:{cell_bg}; color:{text_color}; '
+          f'padding:6px 10px; border:1px solid {border_color};">')
 
     html_text = html_text.replace("<table>", table)
     html_text = html_text.replace("<th>", th)
@@ -858,8 +874,8 @@ class GoPilotPage(QWidget):
         head.addWidget(self.status_label)
         lay.addLayout(head)
 
-        desc = QLabel("Ask me anything about geospatial analysis, Earth "
-                      "observation, or QGIS operations.")
+        desc = QLabel("Ask me anything about geospatial analysis and earth "
+                      "observation I can automate anything for you!")
         desc.setWordWrap(True)
         desc.setStyleSheet(
             f"font-size:13px; color:{theme_utils.get_secondary_text_color()}; "
@@ -1328,7 +1344,7 @@ class GoPilotPage(QWidget):
             else:
                 self.add_message(content, is_user=True, timestamp=timestamp)
         self.status_label.setText(
-            f"Chat: {self.current_chat_id} ({len(messages)} messages)"
+            f"This chat contains {len(messages)} messages"
         )
 
     def _on_messages_error(self, error_msg):
