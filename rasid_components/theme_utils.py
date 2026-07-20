@@ -54,13 +54,8 @@ def is_dark_theme():
         bool: True if dark theme is active, False otherwise
     """
     palette = QApplication.palette()
-    # PyQt6 compatibility - use ColorRole enum
-    try:
-        # PyQt6 style
-        bg_color = palette.color(QPalette.ColorRole.Window)
-    except AttributeError:
-        # PyQt5 style fallback
-        bg_color = palette.color(QPalette.Window)
+    # Scoped enum (QPalette.ColorRole.Window) works on both PyQt5 5.15+ and PyQt6.
+    bg_color = palette.color(QPalette.ColorRole.Window)
     # Check if background is dark (luminance < 128)
     luminance = (0.299 * bg_color.red() + 0.587 * bg_color.green() + 0.114 * bg_color.blue())
     return luminance < 128
