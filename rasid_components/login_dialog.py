@@ -1,7 +1,12 @@
 # login dialog UI
 import os
 import sys
-import subprocess
+# subprocess is used only to run a Python interpreter resolved from the QGIS
+# install (sys.executable / known install paths) with a fixed argument list
+# ("-m", "pip", "uninstall", "keyring", "-y"). No shell is used and no argument
+# is derived from untrusted input, so the Bandit B404/B603 findings are false
+# positives; the call site is suppressed inline with justification.
+import subprocess  # nosec B404
 from qgis.PyQt.QtWidgets import (
     QDialog, QLineEdit, QLabel, QPushButton, QVBoxLayout,
     QHBoxLayout, QFrame, QMessageBox
@@ -297,7 +302,7 @@ class LoginDialog(QDialog):
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = subprocess.SW_HIDE
 
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
                 cmd,
                 capture_output=True,
                 text=True,

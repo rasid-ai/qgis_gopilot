@@ -255,7 +255,7 @@ class CreateProcessWizard(QWidget):
         # Only show vector layers (shapefiles, GeoJSON, etc.) - exclude rasters (TIFFs)
         vector_layer_count = 0
         for layer in QgsProject.instance().mapLayers().values():
-            if layer.type() == QgsMapLayer.VectorLayer:
+            if layer.type() == QgsMapLayer.LayerType.VectorLayer:
                 self._layer_combo.addItem(layer.name(), layer.id())
                 vector_layer_count += 1
 
@@ -523,8 +523,8 @@ class CreateProcessWizard(QWidget):
             return
 
         geom_type = geom.wkbType()
-        is_polygon = QgsWkbTypes.flatType(geom_type) == QgsWkbTypes.Polygon
-        is_multipolygon = QgsWkbTypes.flatType(geom_type) == QgsWkbTypes.MultiPolygon
+        is_polygon = QgsWkbTypes.flatType(geom_type) == QgsWkbTypes.Type.Polygon
+        is_multipolygon = QgsWkbTypes.flatType(geom_type) == QgsWkbTypes.Type.MultiPolygon
 
         if not (is_polygon or is_multipolygon):
             QMessageBox.warning(

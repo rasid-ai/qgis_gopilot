@@ -367,11 +367,12 @@ class SendMessageThread(QThread):
                 try:
                     error_details = e.response.json()
                     error_msg = f"{error_msg}\nDetails: {error_details}"
-                except:
+                except Exception:
                     try:
                         error_msg = f"{error_msg}\nResponse: {e.response.text[:200]}"
-                    except:
-                        pass
+                    except Exception as detail_exc:
+                        # Response body was unreadable; keep the base error message.
+                        debug_print(f"[GoPilot] Could not read error response body: {detail_exc}")
 
             self.error.emit(error_msg)
 
@@ -1472,15 +1473,16 @@ class GoPilotPage(QWidget):
                 try:
                     thread.quit()
                     thread.wait(1000)  # Wait max 1 second
-                except:
-                    pass
+                except Exception as exc:
+                    # Thread may already be gone during shutdown; log and continue.
+                    debug_print(f"[GoPilot] Error stopping thread during cleanup: {exc}")
 
         # Clean up geometry manager
         if hasattr(self, "geo_manager") and self.geo_manager:
             try:
                 self.geo_manager.cleanup()
-            except:
-                pass
+            except Exception as exc:
+                debug_print(f"[GoPilot] Error cleaning up geometry manager: {exc}")
 
         # Clear thread list
         self._threads.clear()

@@ -242,7 +242,7 @@ class ModernDrawTool(QgsMapTool):
         self._points = []
 
         # Rubber band for the polygon
-        self._rb = QgsRubberBand(canvas, QgsWkbTypes.PolygonGeometry)
+        self._rb = QgsRubberBand(canvas, QgsWkbTypes.GeometryType.PolygonGeometry)
         self._rb.setColor(QColor(59, 130, 246, 60))  # Blue with transparency
         self._rb.setStrokeColor(QColor(59, 130, 246))
         self._rb.setWidth(3)
@@ -330,7 +330,7 @@ class ModernDrawTool(QgsMapTool):
         marker.setColor(QColor(59, 130, 246))
         marker.setFillColor(QColor(255, 255, 255))
         marker.setIconSize(12)
-        marker.setIconType(QgsVertexMarker.ICON_CIRCLE)
+        marker.setIconType(QgsVertexMarker.IconType.ICON_CIRCLE)
         marker.setPenWidth(3)
         self._vertex_markers.append(marker)
 
@@ -427,7 +427,7 @@ class ModernDrawTool(QgsMapTool):
     def _clear_all(self):
         """Clear all points and start over"""
         self._points = []
-        self._rb.reset(QgsWkbTypes.PolygonGeometry)
+        self._rb.reset(QgsWkbTypes.GeometryType.PolygonGeometry)
 
         for marker in self._vertex_markers:
             self.canvas.scene().removeItem(marker)
@@ -480,7 +480,7 @@ class ModernDrawTool(QgsMapTool):
 
     def reset(self):
         """Reset the tool"""
-        self._rb.reset(QgsWkbTypes.PolygonGeometry)
+        self._rb.reset(QgsWkbTypes.GeometryType.PolygonGeometry)
         self._points = []
 
         for marker in self._vertex_markers:
