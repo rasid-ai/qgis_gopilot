@@ -1,18 +1,17 @@
 import re
-
 from qgis.PyQt.QtWidgets import (
     QLabel, QPushButton, QGridLayout, QVBoxLayout, QHBoxLayout, QWidget,
-    QScrollArea, QFrame, QDialog, QLineEdit,
+    QScrollArea, QFrame, QDialog, QLineEdit, QTextBrowser,
     QMessageBox,
 )
 from qgis.PyQt.QtCore import QThread, pyqtSignal
 from .compat import (
-    Qt_AlignTop, Qt_AlignHCenter, Qt_AlignCenter, Qt_PlainText, Qt_PointingHandCursor,
-    QFrame_NoFrame, QFrame_StyledPanel, exec_dialog, QDialog_Accepted
+    Qt_AlignTop, Qt_AlignHCenter, Qt_AlignCenter,
+    Qt_PointingHandCursor, QFrame_NoFrame, QFrame_StyledPanel,
+    exec_dialog, QDialog_Accepted
 )
 from .image_loader import load_image
 from . import theme_utils
-
 
 def strip_html(text):
     if not text:
@@ -190,20 +189,6 @@ class SolutionsPage(QWidget):
         name.setStyleSheet(f"font-weight: bold; font-size: 13px; border: none; color: {text_color};")
         layout.addWidget(name)
 
-        # Description
-        desc_text = strip_html(sol.get("description_html", ""))
-        if desc_text:
-            desc = QLabel(desc_text)
-            desc.setTextFormat(Qt_PlainText)
-            desc.setWordWrap(True)
-            desc.setMaximumHeight(60)
-            secondary_color = theme_utils.get_secondary_text_color()
-            desc.setStyleSheet(
-                f"color: {secondary_color}; font-size: 11px; border: none;"
-                f"padding: 6px 2px; margin-top: 4px; margin-bottom: 4px;"
-            )
-            layout.addWidget(desc)
-
         # Price per km²
         price = sol.get("euro_per_km2")
         if price is not None:
@@ -243,25 +228,111 @@ class SolutionsPage(QWidget):
     def _on_create_project(self, solution):
         slug = solution.get("slug", "")
         sol_name = solution.get("name", "Solution")
+        sol_desc_raw = solution.get("description_html", "")
+        result_image_url = solution.get("result_image_url", "")
 
-        # Minimal modern dialog
+        # Modern dialog with side-by-side layout
         dlg = QDialog(self)
         dlg.setWindowTitle("Create Project")
-        dlg.setMinimumWidth(420)
+        dlg.setFixedWidth(850)
+        dlg.setFixedHeight(750)
         dialog_bg = theme_utils.get_card_bg()
         dlg.setStyleSheet(f"background: {dialog_bg};")
-        dlg_layout = QVBoxLayout(dlg)
-        dlg_layout.setContentsMargins(24, 24, 24, 24)
-        dlg_layout.setSpacing(18)
+
+        main_layout = QVBoxLayout(dlg)
+        main_layout.setContentsMargins(20, 4, 20, 20)
+        main_layout.setSpacing(1)
 
         # Solution label
         sol_label = QLabel(f"Solution: {sol_name}")
         text_color = theme_utils.get_text_color()
-        sol_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 13px;")
-        dlg_layout.addWidget(sol_label)
+        sol_label.setStyleSheet(f"font-weight: bold; color: {text_color}; font-size: 14px; margin-bottom: 0px;")
+        main_layout.addWidget(sol_label)
+
+        # Horizontal layout for side-by-side content
+        content_layout = QHBoxLayout()
+        content_layout.setSpacing(16)
+
+        # LEFT SIDE: Description (scrollable)
+        if sol_desc_raw:
+            import markdown
+            html_desc = markdown.markdown(
+                sol_desc_raw,
+                extensions=['tables', 'fenced_code', 'nl2br']
+            )
+
+            desc_browser = QTextBrowser()
+            desc_browser.setOpenExternalLinks(True)
+            desc_browser.setFixedHeight(660)  # Match the right side total height
+
+            # Style the text browser
+            card_border = theme_utils.get_card_border()
+            sidebar_bg = theme_utils.get_sidebar_bg()
+            secondary_color = theme_utils.get_secondary_text_color()
+
+            desc_browser.setStyleSheet(f"""
+                QTextBrowser {{
+                    background: {sidebar_bg};
+                    border: 1px solid {card_border};
+                    border-radius: 6px;
+                    padding: 12px;
+                    color: {secondary_color};
+                    font-size: 12px;
+                }}
+            """)
+
+            # Set the HTML content
+            desc_browser.setHtml(f"""
+                <style>
+                    body {{
+                        color: {secondary_color};
+                        font-size: 12px;
+                        line-height: 1.5;
+                    }}
+                    table {{
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 8px 0;
+                    }}
+                    td, th {{
+                        border: 1px solid {card_border};
+                        padding: 6px 8px;
+                        text-align: left;
+                    }}
+                    th {{
+                        background-color: {card_border};
+                        font-weight: bold;
+                    }}
+                    code {{
+                        background: {card_border};
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                        font-family: monospace;
+                    }}
+                    strong {{
+                        color: {text_color};
+                    }}
+                </style>
+                {html_desc}
+            """)
+
+            content_layout.addWidget(desc_browser, stretch=1)
+
+        # RIGHT SIDE: Form inputs (fixed container to match left side height)
+        right_container = QWidget()
+        right_container.setFixedHeight(660)
+
+        form_layout = QVBoxLayout(right_container)
+        form_layout.setContentsMargins(0, 0, 0, 0)
+        form_layout.setSpacing(12)
+
+        # Form section label
+        form_label = QLabel("Create a Project")
+        form_label.setStyleSheet(f"color: {text_color}; font-weight: bold; font-size: 13px;")
+        form_layout.addWidget(form_label)
 
         # Project title
-        dlg_layout.addWidget(QLabel("Project Title:"))
+        form_layout.addWidget(QLabel("Project Title:"))
         title_input = QLineEdit()
         title_input.setPlaceholderText("Enter project title...")
         input_border = theme_utils.get_card_border()
@@ -276,10 +347,10 @@ class SolutionsPage(QWidget):
                 border: 2px solid {theme_utils.BRAND_PRIMARY};
             }}
         """)
-        dlg_layout.addWidget(title_input)
+        form_layout.addWidget(title_input)
 
         # Tags
-        dlg_layout.addWidget(QLabel("Tags (separated by spaces):"))
+        form_layout.addWidget(QLabel("Tags (separated by spaces):"))
         tags_input = QLineEdit()
         tags_input.setPlaceholderText("e.g. cloud detection urban")
         tags_input.setStyleSheet(f"""
@@ -293,7 +364,10 @@ class SolutionsPage(QWidget):
                 border: 2px solid {theme_utils.BRAND_PRIMARY};
             }}
         """)
-        dlg_layout.addWidget(tags_input)
+        form_layout.addWidget(tags_input)
+
+        # Add stretch to push buttons to bottom
+        form_layout.addStretch()
 
         # Buttons
         btn_layout = QHBoxLayout()
@@ -310,7 +384,7 @@ class SolutionsPage(QWidget):
                 color: {cancel_text};
                 border: 2px solid {input_border};
                 border-radius: 6px;
-                padding: 8px 20px;
+                padding: 10px 24px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
@@ -328,7 +402,7 @@ class SolutionsPage(QWidget):
                 color: white;
                 border: none;
                 border-radius: 6px;
-                padding: 8px 20px;
+                padding: 10px 24px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
@@ -338,7 +412,50 @@ class SolutionsPage(QWidget):
         create_btn.clicked.connect(dlg.accept)
         btn_layout.addWidget(create_btn)
 
-        dlg_layout.addLayout(btn_layout)
+        form_layout.addLayout(btn_layout)
+
+        # Result preview image
+        if result_image_url:
+            # Label
+            preview_label = QLabel("Result Preview")
+            preview_label.setStyleSheet(f"color: {text_color}; font-weight: bold; font-size: 13px; margin-top: 12px;")
+            form_layout.addWidget(preview_label)
+
+            # Image container
+            image_container = QFrame()
+            image_container.setFrameShape(QFrame_StyledPanel)
+            image_container.setMinimumHeight(380)
+            image_container.setMaximumHeight(380)
+            image_container.setStyleSheet(f"""
+                QFrame {{
+                    background: {sidebar_bg};
+                    border: 1px solid {card_border};
+                    border-radius: 8px;
+                }}
+            """)
+
+            container_layout = QVBoxLayout(image_container)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.setSpacing(0)
+
+            # Image label that fills the container
+            image_label = QLabel()
+            image_label.setAlignment(Qt_AlignCenter)
+            image_label.setScaledContents(True)  # Scale to fill
+            image_label.setMinimumSize(1, 1)  # Allow it to expand
+            image_label.setStyleSheet("border: none; background: transparent;")
+
+            container_layout.addWidget(image_label)
+
+            # Load the image at high resolution (1024x1024), will be scaled to fit container
+            load_image(self.client, result_image_url, image_label, self._threads,size=(1024, 1024))
+            form_layout.addWidget(image_container)
+
+        # Add right container to content layout
+        content_layout.addWidget(right_container, stretch=1)
+
+        # Add content layout to main
+        main_layout.addLayout(content_layout)
 
         if exec_dialog(dlg) != QDialog_Accepted:
             return

@@ -26,11 +26,16 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
 from .resources import *
-from .rasid_plugin_dialog import RasidPluginDialog
+# NOTE: RasidPluginDialog is imported lazily inside _show_main_dialog(), not
+# here. Its import chain pulls in `markdown` (via gopilot_page), which is a
+# bundled-in-venv dependency that only becomes importable AFTER
+# DependencyManager.prompt_install() runs in run(). Importing it at module load
+# (classFactory time) would raise ModuleNotFoundError on a fresh install,
+# before the user can install dependencies — breaking plugin load entirely.
 from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.compat import exec_dialog, QDialog_Accepted
 from .rasid_components.rasid_client import RasidClient
-from .rasid_components.dependency_installer import DependencyManager
+from .rasid_components.dependencies import DependencyManager
 from qgis.PyQt.QtWidgets import QMessageBox
 import os.path
 
@@ -104,11 +109,23 @@ class RasidPlugin:
             self.iface.removeWebToolBarIcon(action)
 
     def _show_main_dialog(self):
-        """Open the main dialog and load solutions."""
+        """Open the main dialog and show GoPilot by default."""
+        # Lazy import: safe only after prompt_install() (called in run()) has
+        # created the venv and put its site-packages on sys.path, so `markdown`
+        # is importable. See the import note at the top of this module.
+        from .rasid_plugin_dialog import RasidPluginDialog
         self.dlg = RasidPluginDialog(self.client, iface=self.iface)
-        self.dlg.show_solutions()
+        self.dlg.show_gopilot()
         self.dlg.show()
-        exec_dialog(self.dlg)
+        try:
+            exec_dialog(self.dlg)
+        finally:
+            # Safety net: reject()/Esc close the modal loop without firing
+            # closeEvent, so ensure page threads and the map tool are released.
+            try:
+                self.dlg._cleanup_pages()
+            except Exception:
+                pass
 
     def run(self):
         # Check and install dependencies first

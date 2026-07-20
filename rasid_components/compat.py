@@ -62,7 +62,7 @@ If you get AttributeError for a missing Qt constant on QGIS 4:
 """
 from qgis.PyQt.QtCore import QT_VERSION, Qt
 from qgis.PyQt.QtGui import QColor, QPainter
-from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QMessageBox, QDialog
+from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QMessageBox, QDialog, QSizePolicy
 
 QT6 = QT_VERSION >= 0x060000
 
@@ -150,6 +150,28 @@ if QT6:
     QDialog_Accepted             = QDialog.DialogCode.Accepted
     QDialog_Rejected             = QDialog.DialogCode.Rejected
 
+    # Window types / widget attributes
+    Qt_Tool                      = Qt.WindowType.Tool
+    Qt_FramelessWindowHint       = Qt.WindowType.FramelessWindowHint
+    Qt_WA_TranslucentBackground  = Qt.WidgetAttribute.WA_TranslucentBackground
+
+    # Pen styles
+    Qt_SolidLine                 = Qt.PenStyle.SolidLine
+
+    # Keyboard keys
+    Qt_Key_Escape                = Qt.Key.Key_Escape
+    Qt_Key_Backspace             = Qt.Key.Key_Backspace
+    Qt_Key_Delete                = Qt.Key.Key_Delete
+    Qt_Key_Return                = Qt.Key.Key_Return
+    Qt_Key_Enter                 = Qt.Key.Key_Enter
+
+    # QSizePolicy
+    QSizePolicy_Expanding        = QSizePolicy.Policy.Expanding
+    QSizePolicy_Preferred        = QSizePolicy.Policy.Preferred
+    QSizePolicy_Fixed            = QSizePolicy.Policy.Fixed
+    QSizePolicy_Minimum          = QSizePolicy.Policy.Minimum
+    QSizePolicy_Maximum          = QSizePolicy.Policy.Maximum
+
     # Misc
     Qt_KeepAspectRatio           = Qt.AspectRatioMode.KeepAspectRatio
     Qt_SmoothTransformation      = Qt.TransformationMode.SmoothTransformation
@@ -231,6 +253,28 @@ else:
     # QDialog
     QDialog_Accepted             = QDialog.Accepted
     QDialog_Rejected             = QDialog.Rejected
+
+    # Window types / widget attributes
+    Qt_Tool                      = Qt.Tool
+    Qt_FramelessWindowHint       = Qt.FramelessWindowHint
+    Qt_WA_TranslucentBackground  = Qt.WA_TranslucentBackground
+
+    # Pen styles
+    Qt_SolidLine                 = Qt.SolidLine
+
+    # Keyboard keys
+    Qt_Key_Escape                = Qt.Key_Escape
+    Qt_Key_Backspace             = Qt.Key_Backspace
+    Qt_Key_Delete                = Qt.Key_Delete
+    Qt_Key_Return                = Qt.Key_Return
+    Qt_Key_Enter                 = Qt.Key_Enter
+
+    # QSizePolicy
+    QSizePolicy_Expanding        = QSizePolicy.Expanding
+    QSizePolicy_Preferred        = QSizePolicy.Preferred
+    QSizePolicy_Fixed            = QSizePolicy.Fixed
+    QSizePolicy_Minimum          = QSizePolicy.Minimum
+    QSizePolicy_Maximum          = QSizePolicy.Maximum
 
     # Misc
     Qt_KeepAspectRatio           = Qt.KeepAspectRatio

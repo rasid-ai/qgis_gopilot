@@ -1,103 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 Dependency installer for external Python packages.
-Handles checking and installing required libraries like keyring.
+Handles checking and installing required libraries in an isolated virtual environment.
+
+Uses venv_manager for proper dependency isolation from QGIS Python environment.
 """
 
 import sys
-import subprocess
-import importlib.util
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QMessageBox
 from qgis.PyQt.QtCore import QThread, pyqtSignal
 from qgis.PyQt.QtGui import QFont
-from .compat import Qt_RichText, Qt_PointingHandCursor, exec_dialog, QDialog_Accepted
-from . import theme_utils
-
-
-class InstallWorker(QThread):
-    """Worker thread for installing packages without blocking UI."""
-
-    finished = pyqtSignal(bool, str)  # success, message
-    progress = pyqtSignal(str)  # progress text
-
-    def __init__(self, packages):
-        super().__init__()
-        self.packages = packages
-
-    def run(self):
-        """Install packages using pip."""
-        try:
-            # Get Python executable - QGIS specific handling
-            import os
-
-            # sys.executable points to QGIS, not Python
-            # We need to find the actual Python executable
-            qgis_path = sys.executable
-
-            # On Windows, QGIS Python is typically in the same directory or in bin/
-            if os.name == 'nt':  # Windows
-                qgis_dir = os.path.dirname(qgis_path)
-                # Try python3.exe first, then python.exe
-                python_candidates = [
-                    os.path.join(qgis_dir, "python3.exe"),
-                    os.path.join(qgis_dir, "python.exe"),
-                    os.path.join(qgis_dir, "..", "bin", "python3.exe"),
-                    os.path.join(qgis_dir, "..", "bin", "python.exe"),
-                ]
-                python_exe = None
-                for candidate in python_candidates:
-                    if os.path.exists(candidate):
-                        python_exe = candidate
-                        break
-
-                if not python_exe:
-                    # Fallback: try to use python3 from PATH
-                    python_exe = "python3"
-            else:  # Linux/Mac
-                python_exe = "python3"
-
-            # Build pip install command
-            cmd = [python_exe, "-m", "pip", "install", "--user"] + self.packages
-
-            self.progress.emit(f"Running: {' '.join(cmd)}\n")
-
-            # Run installation (hide console window on Windows)
-            startupinfo = None
-            if os.name == 'nt':  # Windows
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = subprocess.SW_HIDE
-
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                startupinfo=startupinfo
-            )
-
-            # Stream output
-            for line in process.stdout:
-                self.progress.emit(line)
-
-            process.wait()
-
-            if process.returncode == 0:
-                self.finished.emit(True, "Installation completed successfully!")
-            else:
-                self.finished.emit(False, f"Installation failed with return code {process.returncode}")
-
-        except Exception as e:
-            self.finished.emit(False, f"Installation error: {str(e)}")
+from ..compat import Qt_RichText, Qt_PointingHandCursor, exec_dialog, QDialog_Accepted
+from .. import theme_utils
+from . import venv_manager
 
 
 class DependencyInstallerDialog(QDialog):
-    """Dialog for installing required dependencies."""
+    """Dialog for installing required dependencies in an isolated virtual environment."""
 
-    def __init__(self, packages, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.packages = packages
         self.worker = None
         self.setup_ui()
 
@@ -129,9 +51,12 @@ class DependencyInstallerDialog(QDialog):
         layout.addWidget(title)
 
         # Description
-        packages_str = ', '.join(self.packages)
+        missing_packages = venv_manager.get_missing_packages()
+        packages_display = ', '.join([pkg.split('>=')[0] for pkg in missing_packages])
         desc = QLabel(
-            f"The RASID plugin needs to install <b>{packages_str}</b> for secure credential storage.\n\n"
+            f"The QGIS GoPilot plugin needs to install <b>{packages_display}</b> "
+            f"in an isolated virtual environment.\n\n"
+            f"This keeps your QGIS Python environment clean and avoids conflicts.\n\n"
             f"Click Install to continue (requires internet connection)."
         )
         desc.setTextFormat(Qt_RichText)
@@ -213,7 +138,7 @@ class DependencyInstallerDialog(QDialog):
         self.setMinimumHeight(400)  # Expand dialog when showing output
 
         # Create and start worker thread
-        self.worker = InstallWorker(self.packages)
+        self.worker = venv_manager.DepsInstallWorker(self)
         self.worker.progress.connect(self.update_progress)
         self.worker.finished.connect(self.installation_finished)
         self.worker.start()
@@ -234,23 +159,26 @@ class DependencyInstallerDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Success",
-                "Libraries installed successfully!\n\nThe plugin will now load."
+                "Libraries installed successfully in isolated virtual environment!\n\n"
+                "The plugin will now load."
             )
             self.accept()
         else:
             self.output_text.append(f"\n✗ {message}")
+            missing = venv_manager.get_missing_packages()
+            manual_install = ' '.join(missing)
             QMessageBox.critical(
                 self,
                 "Installation Failed",
                 f"{message}\n\n"
                 "Please try installing manually:\n"
-                f"pip install {' '.join(self.packages)}"
+                f"pip install {manual_install}"
             )
             self.install_button.setEnabled(True)
 
 
 class DependencyManager:
-    """Manages checking and installing dependencies."""
+    """Manages checking and installing dependencies using isolated virtual environment."""
 
     @staticmethod
     def check_package(package_name):
@@ -266,12 +194,21 @@ class DependencyManager:
         # TESTING MODE: Uncomment the line below to force install dialog
         # return False
 
-        try:
-            # Try to actually import the module
-            __import__(package_name)
-            return True
-        except (ImportError, ModuleNotFoundError, ValueError, Exception):
-            return False
+        # Ensure venv packages are on sys.path
+        venv_manager.ensure_venv_packages_available()
+
+        discoverable, _ = venv_manager._dependency_discoverable(package_name)
+        return discoverable
+
+    @staticmethod
+    def get_required_packages():
+        """
+        Get required packages from venv_manager.
+
+        Returns:
+            list: List of required package names (import names, not pip specs)
+        """
+        return [import_name for import_name, _ in venv_manager.get_required_packages()]
 
     @staticmethod
     def check_dependencies():
@@ -281,14 +218,13 @@ class DependencyManager:
         Returns:
             tuple: (all_installed: bool, missing_packages: list)
         """
-        required_packages = ["keyring"]
-        missing = []
+        all_installed = venv_manager.all_dependencies_met()
+        missing_specs = venv_manager.get_missing_packages()
+        # Extract just the package names for backwards compatibility
+        missing = [pkg.split('>=')[0].split('==')[0].split('<')[0].strip()
+                   for pkg in missing_specs]
 
-        for package in required_packages:
-            if not DependencyManager.check_package(package):
-                missing.append(package)
-
-        return len(missing) == 0, missing
+        return all_installed, missing
 
     @staticmethod
     def prompt_install(parent=None):
@@ -302,13 +238,22 @@ class DependencyManager:
             bool: True if all dependencies are available (either were already
                   installed or successfully installed now), False otherwise
         """
+        # Check if Python version is supported
+        if not venv_manager.python_runtime_supported():
+            QMessageBox.critical(
+                parent,
+                "Python Version Not Supported",
+                venv_manager.python_runtime_error()
+            )
+            return False
+
         all_installed, missing = DependencyManager.check_dependencies()
 
         if all_installed:
             return True
 
         # Show installation dialog
-        dialog = DependencyInstallerDialog(missing, parent)
+        dialog = DependencyInstallerDialog(parent)
         result = exec_dialog(dialog)
 
         if result == QDialog_Accepted:

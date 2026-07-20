@@ -2,7 +2,9 @@
 import os
 import tempfile
 import requests
-from .config import API_BASE_URL, REQUEST_TIMEOUT
+from .config import API_BASE_URL, REQUEST_TIMEOUT, GOPILOT_LLM_BASE_URL
+from .gopilot_client import GoPilotClient
+from .logger import debug_print
 
 class RasidClient:
     """
@@ -19,6 +21,7 @@ class RasidClient:
         self.session = requests.Session()
         self.base_url = API_BASE_URL
         self.api_key = None  # Will be set via set_api_key() or load_api_key()
+        self.gopilot = None  # GoPilot client, initialized after setting API key
 
     # ============================================================================
     # API KEY AUTHENTICATION (New, Recommended)
@@ -42,6 +45,13 @@ class RasidClient:
         self.api_key = api_key.strip()
         # Set Authorization header (preferred method)
         self.session.headers["Authorization"] = f"Bearer {self.api_key}"
+
+        # Initialize GoPilot client with the API key
+        try:
+            self.gopilot = GoPilotClient(GOPILOT_LLM_BASE_URL, self.api_key)
+        except Exception as e:
+            debug_print(f"[RASID] Failed to initialize GoPilot client: {e}")
+            self.gopilot = None
 
     def save_api_key(self, api_key=None):
         """
@@ -119,6 +129,9 @@ class RasidClient:
 
         # Clear from session
         self.set_api_key(None)
+
+        # Clear GoPilot client
+        self.gopilot = None
 
         # Clear from secure storage
         try:
@@ -422,7 +435,22 @@ class RasidClient:
         if url.startswith("/"):
             url = self.base_url.rstrip("/api/") + url  # Handle base URL correctly
 
-        response = self.session.get(url, timeout=60, stream=True)
+        # Check if this is an S3 URL or other external URL (not from our API)
+        # S3 URLs and external URLs should be downloaded without auth headers
+        is_external_url = (
+            url.startswith("https://s3.") or
+            url.startswith("https://") and ".s3." in url or
+            url.startswith("https://") and ".amazonaws.com" in url or
+            (url.startswith("https://") and not url.startswith(self.base_url))
+        )
+
+        if is_external_url:
+            # Use requests directly without authentication session
+            response = requests.get(url, timeout=60, stream=True)
+        else:
+            # Use authenticated session for API URLs
+            response = self.session.get(url, timeout=60, stream=True)
+
         response.raise_for_status()
 
         # SECURITY: Extract filename from URL

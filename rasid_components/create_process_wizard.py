@@ -12,7 +12,7 @@ from qgis.core import (
     QgsProject, QgsCoordinateReferenceSystem, QgsCoordinateTransform,
     QgsMapLayer,
 )
-from .aoi_tool import AoiDrawTool
+from .geometry import GeometryInputManager
 from .compat import (
     Qt_AlignCenter, Qt_PointingHandCursor, Qt_UserRole, QFrame_NoFrame,
     QMessageBox_Yes, QMessageBox_No
@@ -107,10 +107,11 @@ class CreateProcessWizard(QWidget):
         self._aoi_coords = None
         self._catalogue_results_raw = None
         self._config = {}
-        self._draw_tool = None
-        self._prev_map_tool = None
         self._upload_path = None
-        self._parent_dialog = None
+
+        # Initialize geometry input manager
+        self.geo_manager = GeometryInputManager(iface, parent_widget=self)
+        self.geo_manager.geometry_ready.connect(self._on_geometry_ready)
 
         # Main layout
         outer = QVBoxLayout(self)
@@ -434,26 +435,45 @@ class CreateProcessWizard(QWidget):
     # ------------------------------------------------------------------
 
     def _start_draw_aoi(self):
-        self._prev_map_tool = self.canvas.mapTool()
-        self._draw_tool = AoiDrawTool(self.canvas)
-        self._draw_tool.polygon_finished.connect(self._on_aoi_drawn)
-        self.canvas.setMapTool(self._draw_tool)
-        # Find and minimize the parent dialog so the map is visible
-        self._parent_dialog = self.window()
-        if self._parent_dialog:
-            self._parent_dialog.showMinimized()
-        self.iface.messageBar().pushInfo(
-            "RASID", "Left-click to add points, right-click to finish polygon."
+        """Start drawing AOI using the geometry manager"""
+        self.geo_manager.start_draw_mode(
+            minimize_parent=True,
+            show_help=True,
+            help_context="wizard"
         )
 
-    def _on_aoi_drawn(self, coords):
+    def _on_geometry_ready(self, geometry_data):
+        """Handle geometry input completion from drawing or layer selection.
+
+        Args:
+            geometry_data: Dict with 'geojson', 'source', and 'name' keys
+        """
+        geojson = geometry_data['geojson']
+
+        # Extract coordinates from GeoJSON
+        # Handle both Polygon and FeatureCollection types
+        if geojson.get('type') == 'Polygon':
+            # Single polygon from drawing
+            coords = geojson['coordinates'][0]
+        elif geojson.get('type') == 'FeatureCollection':
+            # From layer - get first feature's coordinates
+            features = geojson.get('features', [])
+            if features:
+                first_geom = features[0].get('geometry', {})
+                if first_geom.get('type') == 'Polygon':
+                    coords = first_geom['coordinates'][0]
+                elif first_geom.get('type') == 'MultiPolygon':
+                    coords = first_geom['coordinates'][0][0]
+                else:
+                    coords = []
+            else:
+                coords = []
+        else:
+            coords = []
+
+        # Store and display
         self._aoi_coords = coords
         self._aoi_display.setPlainText(json.dumps(coords))
-        if self._prev_map_tool:
-            self.canvas.setMapTool(self._prev_map_tool)
-        if self._parent_dialog:
-            self._parent_dialog.showNormal()
-            self._parent_dialog.activateWindow()
 
     def _on_layer_selected(self, index):
         if index <= 0:
