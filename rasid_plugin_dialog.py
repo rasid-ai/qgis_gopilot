@@ -309,8 +309,9 @@ class RasidPluginDialog(QDialog):
         if email:
             try:
                 keyring.delete_password("rasid_plugin", email)
-            except:
-                pass
+            except Exception as exc:
+                # No stored credential to delete, or keyring unavailable.
+                debug_print(f"[RASID] Could not delete keyring credential: {exc}")
         settings.remove("rasid_plugin/email")
         self._cleanup_pages()
         self.reject()

@@ -36,6 +36,7 @@ from .rasid_components.login_dialog import LoginDialog
 from .rasid_components.compat import exec_dialog, QDialog_Accepted
 from .rasid_components.rasid_client import RasidClient
 from .rasid_components.dependencies import DependencyManager
+from .rasid_components.logger import debug_print
 from qgis.PyQt.QtWidgets import QMessageBox
 import os.path
 
@@ -124,8 +125,9 @@ class RasidPlugin:
             # closeEvent, so ensure page threads and the map tool are released.
             try:
                 self.dlg._cleanup_pages()
-            except Exception:
-                pass
+            except Exception as exc:
+                # Best-effort cleanup on modal close; log and continue teardown.
+                debug_print(f"[RasidPlugin] Error during page cleanup: {exc}")
 
     def run(self):
         # Check and install dependencies first

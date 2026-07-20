@@ -6,7 +6,13 @@ Manages an isolated venv for plugin dependencies to avoid polluting QGIS Python.
 
 import os
 import sys
-import subprocess
+# subprocess is used only to invoke a Python interpreter resolved from the
+# system (sys.executable / sys._base_executable / PATH) with fixed, hard-coded
+# argument lists ("-m", "pip", "venv", "ensurepip", ...). No argument is ever a
+# shell string and shell=True is never used, so there is no command-injection
+# surface. The Bandit B404/B603 findings on this module are therefore false
+# positives and are suppressed inline with justification at each call site.
+import subprocess  # nosec B404
 import shutil
 import importlib.util
 import importlib.metadata
@@ -15,6 +21,8 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Callable
 
 from qgis.PyQt.QtCore import QThread, pyqtSignal
+
+from ..logger import debug_print
 
 
 # Plugin configuration
@@ -428,7 +436,7 @@ def _ensure_base_pip(
 
     def _pip_ok() -> bool:
         try:
-            r = subprocess.run(
+            r = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
                 [python_exe, "-m", "pip", "--version"],
                 capture_output=True, text=True, timeout=60, env=env, **kwargs,
             )
@@ -442,12 +450,13 @@ def _ensure_base_pip(
     if progress_callback:
         progress_callback("Bootstrapping pip (ensurepip)...")
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
             [python_exe, "-m", "ensurepip", "--upgrade"],
             capture_output=True, text=True, timeout=180, env=env, **kwargs,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        # Best-effort bootstrap; the _pip_ok() re-check below decides success.
+        debug_print(f"[venv_manager] ensurepip bootstrap failed: {exc}")
 
     if _pip_ok():
         return True, ""
@@ -516,7 +525,7 @@ def _python_executable_usable(path: str) -> Tuple[bool, str]:
         f"({sys.version_info.major}, {sys.version_info.minor}) else 3)"
     )
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
             [path, "-c", code],
             capture_output=True,
             text=True,
@@ -643,7 +652,7 @@ def _verify_pip_and_return(python_path: str) -> str:
     kwargs = _get_subprocess_kwargs()
 
     # Try ensurepip
-    subprocess.run(
+    subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
         [python_path, "-m", "ensurepip", "--upgrade"],
         capture_output=True,
         text=True,
@@ -653,7 +662,7 @@ def _verify_pip_and_return(python_path: str) -> str:
     )
 
     # Verify pip works
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
         [python_path, "-m", "pip", "--version"],
         capture_output=True,
         text=True,
@@ -721,7 +730,7 @@ def create_venv(venv_dir: str, progress_callback: Optional[Callable[[str], None]
         python_exe = _find_python_executable()
         if progress_callback:
             progress_callback("Creating package environment...")
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
             [python_exe, "-m", "venv", "--without-pip", venv_dir],
             capture_output=True,
             text=True,
@@ -797,7 +806,7 @@ def install_packages(
     if progress_callback:
         progress_callback(f"Installing: {', '.join(packages)}...")
 
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - fixed args, no shell, trusted interpreter
         pip_cmd,
         capture_output=True,
         text=True,

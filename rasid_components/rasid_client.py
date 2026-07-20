@@ -110,8 +110,9 @@ class RasidClient:
             if api_key:
                 self.set_api_key(api_key)
                 return True
-        except Exception:
-            pass  # Keyring not available or no key stored
+        except Exception as exc:
+            # Keyring not available or no key stored — treat as "no key".
+            debug_print(f"[RasidClient] Could not read API key from keyring: {exc}")
 
         return False
 
