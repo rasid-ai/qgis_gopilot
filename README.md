@@ -1,20 +1,10 @@
-# GoPilot for QGIS
-
-## AI-Powered Earth Observation Inside QGIS
-
-GoPilot is an AI assistant for geospatial and Earth Observation workflows that integrates directly into QGIS, enabling analysts, researchers, NGOs, and operational teams to accelerate remote sensing tasks using natural language and AI-assisted automation.
-
-Built by RASID, GoPilot connects operational EO workflows with modern AI capabilities, helping users move faster from raw satellite imagery to actionable geospatial insights.
-
----
-
-https://github.com/user-attachments/assets/f70cbba6-ded7-4527-bac0-fbd1e29174d8
+# GoPilot for ArcGIS Pro and QGIS
 
 ## Why GoPilot?
 
-Earth Observation workflows are often fragmented, code-heavy, and time-consuming.
+Earth Observation workflows are often fragmented, code-heavy, and time-consuming. GoPilot is an AI assistant for geospatial and Earth Observation workflows that integrates directly into ArcGIS Pro and QGIS, enabling analysts, researchers, NGOs, and operational teams to accelerate remote sensing tasks using natural language and AI-assisted automation.
 
-GoPilot simplifies geospatial analysis by embedding an AI-powered assistant directly inside QGIS, allowing users to:
+Built by RASID, GoPilot connects operational EO workflows with modern AI capabilities, helping users move faster from raw satellite imagery to actionable geospatial insights. GoPilot simplifies geospatial analysis by embedding an AI-powered assistant directly inside ArcGIS Pro and QGIS, allowing users to:
 
 - Interact with EO workflows conversationally
 - Automate repetitive GIS operations
@@ -30,7 +20,7 @@ Whether you're monitoring forests, analyzing urban growth, validating land cover
 
 ### AI-Assisted Geospatial Workflows
 
-Use natural language prompts to support common GIS and remote sensing operations directly inside QGIS.
+Use natural language prompts to support common GIS and remote sensing operations directly inside ArcGIS Pro and QGIS.
 
 ### Earth Observation Integration
 
@@ -42,9 +32,9 @@ Designed for satellite imagery workflows including:
 - Raster and vector analysis
 - EO preprocessing pipelines
 
-### QGIS-Native Experience
+### ArcGIS Pro and QGIS Native Experience
 
-Works directly within the QGIS environment with minimal setup and seamless integration into existing workflows.
+Works directly within the ArcGIS Pro and QGIS environment with minimal setup and seamless integration into existing workflows.
 
 ### Operational Workflow Support
 
@@ -57,10 +47,6 @@ Supports analysts and teams working on:
 - Infrastructure planning
 - Disaster response
 - Geospatial intelligence
-
-### Scalable SaaS Backend
-
-Integrated with the RASID Platform for cloud-connected EO and AI services.
 
 ---
 
@@ -121,19 +107,6 @@ GoPilot
 4. Define or upload your Area of Interest (AOI)
 5. Run AI-assisted geospatial and Earth Observation processes
 6. Review, visualize, and export results directly inside QGIS
-
----
-
-## Architecture
-
-GoPilot combines:
-
-- QGIS desktop integration
-- Cloud-based AI services
-- Geospatial processing pipelines
-- Earth Observation analytics workflows
-
-The platform is designed to bridge operational GIS environments with modern AI-assisted geospatial analysis.
 
 ---
 
