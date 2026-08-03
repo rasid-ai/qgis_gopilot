@@ -72,13 +72,22 @@ Reduce repetitive manual workflows and simplify complex geospatial operations.
 
 ## Requirements
 
+### ArcGIS Pro
+
+- ArcGIS Pro 3.0 or higher
+- A RASID account and API key
+- Internet connection for RASID API access
+
+### QGIS
+
 - QGIS 3.0 or higher
 - Python 3.7 or higher
-- Internet connection for API access and dependency installation
+- A RASID account and API key
+- Internet connection for RASID API access and dependency installation
 
 ---
 
-## Installation
+## QGIS Installation
 
 ### Install from QGIS Plugin Manager
 
@@ -100,6 +109,17 @@ GoPilot
 ---
 
 ## Usage
+
+### ArcGIS Pro
+
+1. Click the RASID icon in the ArcGIS Pro toolbar
+2. Sign up or log in to generate an API key
+3. Select a solution and create your first project
+4. Define or select your Area of Interest (AOI)
+5. Run AI-assisted geospatial and Earth Observation processes
+6. Review, visualize, and load results directly inside ArcGIS Pro
+
+### QGIS
 
 1. Click the RASID icon in the QGIS toolbar
 2. Sign up or log in to generate an API key
@@ -130,7 +150,7 @@ GoPilot
 - Improves accessibility of advanced EO analytics
 - Enhances operational decision-making
 - Supports scalable geospatial AI workflows
-- Integrates directly into existing QGIS environments
+- Integrates directly into existing ArcGIS Pro and QGIS environments
 
 ---
 
@@ -138,7 +158,7 @@ GoPilot
 
 - Website: https://app.rasid.ai/
 - QGIS Plugin: https://plugins.qgis.org/plugins/rasid_plugin/
-- GitHub Repository: https://github.com/rasid-ai/qgis_gopilot
+- QGIS GitHub Repository: https://github.com/rasid-ai/qgis_gopilot
 
 ---
 
