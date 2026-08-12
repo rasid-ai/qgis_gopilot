@@ -63,7 +63,8 @@ def create_trash_icon(size=24, color="#e74c3c"):
     body_bottom = int(size * 0.85)
     body_left = int(size * 0.25)
     body_right = int(size * 0.75)
-    painter.drawRect(body_left, body_top, body_right - body_left, body_bottom - body_top)
+    painter.drawRect(body_left, body_top, body_right -
+                     body_left, body_bottom - body_top)
 
     # Draw lid
     lid_y = int(size * 0.3)
@@ -76,7 +77,8 @@ def create_trash_icon(size=24, color="#e74c3c"):
     painter.drawLine(int(size * 0.4), handle_y, int(size * 0.6), handle_y)
 
     # Draw vertical lines inside bin
-    painter.drawLine(int(size * 0.5), int(size * 0.45), int(size * 0.5), int(size * 0.75))
+    painter.drawLine(int(size * 0.5), int(size * 0.45),
+                     int(size * 0.5), int(size * 0.75))
 
     painter.end()
     return QIcon(pixmap)
@@ -163,12 +165,9 @@ def _layer_exists_in_qgis(layer_name):
 def _add_layer_to_qgis(filepath, layer_name):
     from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
     root = QgsProject.instance().layerTreeRoot()
-    rasid_group = root.findGroup("RASID")
-    if rasid_group is None:
-        rasid_group = root.insertGroup(0, "RASID")
-    target_group = rasid_group.findGroup("Solutions")
+    target_group = root.findGroup("GoBox")
     if target_group is None:
-        target_group = rasid_group.addGroup("Solutions")
+        target_group = root.insertGroup(0, "GoBox")
 
     ext = filepath.rsplit(".", 1)[-1].lower()
     if ext in ("tif", "tiff"):
@@ -201,7 +200,8 @@ class ProcessesPage(QWidget):
         self._general_info_layout = None
         self._analytics_layout = None
         self._not_completed_message = None  # Track "not yet completed" message
-        self._downloads_section_exists = False  # Track if download buttons have been added
+        # Track if download buttons have been added
+        self._downloads_section_exists = False
         self._last_known_situation = None  # Track status to detect changes
 
         # Auto-refresh timer for polling process status (completely invisible)
@@ -217,13 +217,15 @@ class ProcessesPage(QWidget):
         header = QFrame()
         header_bg = theme_utils.get_sidebar_bg()
         header_border = theme_utils.get_separator_color()
-        header.setStyleSheet(f"background: {header_bg}; border-bottom: 1px solid {header_border};")
+        header.setStyleSheet(
+            f"background: {header_bg}; border-bottom: 1px solid {header_border};")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(8, 6, 8, 6)
 
         self._title_label = QLabel("")
         text_color = theme_utils.get_text_color()
-        self._title_label.setStyleSheet(f"font-weight: bold; font-size: 15px; color: {text_color};")
+        self._title_label.setStyleSheet(
+            f"font-weight: bold; font-size: 15px; color: {text_color};")
         header_layout.addWidget(self._title_label)
         header_layout.addStretch()
 
@@ -351,7 +353,8 @@ class ProcessesPage(QWidget):
         self._clear_list()
 
         if not processes:
-            lbl = QLabel("No processes yet. Click '+ New Process' to create one.")
+            lbl = QLabel(
+                "No processes yet. Click '+ New Process' to create one.")
             lbl.setAlignment(Qt_AlignCenter)
             secondary_color = theme_utils.get_secondary_text_color()
             lbl.setStyleSheet(f"color: {secondary_color}; font-size: 13px;")
@@ -374,7 +377,8 @@ class ProcessesPage(QWidget):
         if processes:
             if preserve_selection and selected_index is not None:
                 # Silently restore previously selected process (don't trigger full reload)
-                selected_row = self._list_layout.itemAt(selected_index).widget()
+                selected_row = self._list_layout.itemAt(
+                    selected_index).widget()
 
                 # Update row selection styling without triggering detail fetch
                 if self._selected_row:
@@ -393,8 +397,10 @@ class ProcessesPage(QWidget):
 
                 # Silently update detail view - only update status badge, don't rebuild everything
                 if selected_proc and selected_proc.get("id"):
-                    self._detail_thread = FetchProcessDetailThread(self.client, selected_proc.get("id"))
-                    self._detail_thread.finished.connect(lambda proc: self._update_detail_status_only(proc))
+                    self._detail_thread = FetchProcessDetailThread(
+                        self.client, selected_proc.get("id"))
+                    self._detail_thread.finished.connect(
+                        lambda proc: self._update_detail_status_only(proc))
                     self._detail_thread.error.connect(self._on_detail_error)
                     self._detail_thread.start()
 
@@ -447,7 +453,8 @@ class ProcessesPage(QWidget):
             slug = self._current_project.get("slug", "")
             self._fetch_thread = FetchProcessesThread(self.client, slug)
             # Use lambda to pass preserve_selection=True for silent refresh
-            self._fetch_thread.finished.connect(lambda procs: self._on_loaded(procs, preserve_selection=True))
+            self._fetch_thread.finished.connect(
+                lambda procs: self._on_loaded(procs, preserve_selection=True))
             self._fetch_thread.error.connect(self._on_error)
             self._fetch_thread.start()
 
@@ -485,7 +492,8 @@ class ProcessesPage(QWidget):
         thumb.setFixedSize(LIST_THUMB, LIST_THUMB)
         thumb.setAlignment(Qt_AlignCenter)
         thumb_bg = theme_utils.get_sidebar_bg()
-        thumb.setStyleSheet(f"background: {thumb_bg}; border-radius: 4px; border: none;")
+        thumb.setStyleSheet(
+            f"background: {thumb_bg}; border-radius: 4px; border: none;")
         load_image(self.client, proc.get("thumbnail"), thumb, self._threads,
                    size=(LIST_THUMB, LIST_THUMB))
         layout.addWidget(thumb)
@@ -494,7 +502,8 @@ class ProcessesPage(QWidget):
         info.setSpacing(2)
         name = QLabel(proc.get("name", "Unnamed"))
         text_color = theme_utils.get_text_color()
-        name.setStyleSheet(f"font-weight: bold; font-size: 12px; border: none; color: {text_color};")
+        name.setStyleSheet(
+            f"font-weight: bold; font-size: 12px; border: none; color: {text_color};")
         info.addWidget(name)
 
         situation = proc.get("situation", "idle") or "idle"
@@ -524,7 +533,8 @@ class ProcessesPage(QWidget):
         hide_btn.clicked.connect(lambda _, p=proc: self._on_hide_process(p))
         layout.addWidget(hide_btn, alignment=Qt_AlignTop)
 
-        row.mousePressEvent = lambda e, p=proc, r=row: self._on_row_clicked(p, r)
+        row.mousePressEvent = lambda e, p=proc, r=row: self._on_row_clicked(
+            p, r)
         return row
 
     def _on_row_clicked(self, proc, row):
@@ -567,7 +577,8 @@ class ProcessesPage(QWidget):
         self._clear_detail()
         lbl = QLabel(f"Failed to load detail: {msg}")
         lbl.setAlignment(Qt_AlignCenter)
-        lbl.setStyleSheet(f"color: {theme_utils.BRAND_DANGER}; font-size: 12px;")
+        lbl.setStyleSheet(
+            f"color: {theme_utils.BRAND_DANGER}; font-size: 12px;")
         self._detail_layout.addWidget(lbl)
 
     # ── Detail panel ──
@@ -642,7 +653,7 @@ class ProcessesPage(QWidget):
             # 1. Update thumbnail
             if self._detail_thumbnail:
                 load_image(self.client, proc.get("thumbnail"), self._detail_thumbnail,
-                          self._threads, size=(DETAIL_THUMB, DETAIL_THUMB))
+                           self._threads, size=(DETAIL_THUMB, DETAIL_THUMB))
 
             # 2. Update status badge
             situation = proc.get("situation", "idle") or "idle"
@@ -668,10 +679,11 @@ class ProcessesPage(QWidget):
                 self._add_info_row_to_layout(self._general_info_layout, "Fees",
                                              f"€{fees}" if fees is not None else "-")
                 create_date = proc.get("create_date", "-") or "-"
-                self._add_info_row_to_layout(self._general_info_layout, "Date", create_date)
+                self._add_info_row_to_layout(
+                    self._general_info_layout, "Date", create_date)
                 area = proc.get("area")
                 self._add_info_row_to_layout(self._general_info_layout, "Area",
-                                            f"{area} km²" if area is not None else "-")
+                                             f"{area} km²" if area is not None else "-")
 
             # 4. Update/Add analytics section
             analytics = proc.get("analytics", {})
@@ -693,13 +705,14 @@ class ProcessesPage(QWidget):
                         self._clear_layout(item.layout())
 
                 for key, value in analytics.items():
-                    self._add_info_row_to_layout(self._analytics_layout, key, value)
+                    self._add_info_row_to_layout(
+                        self._analytics_layout, key, value)
 
             # 5. Add download buttons if status just changed to "Completed"
             is_completed = situation == "is"
             status_changed_to_completed = (is_completed and
-                                          self._last_known_situation != "is" and
-                                          not self._downloads_section_exists)
+                                           self._last_known_situation != "is" and
+                                           not self._downloads_section_exists)
 
             if status_changed_to_completed:
                 # Delete "not yet completed" message if it exists
@@ -710,13 +723,15 @@ class ProcessesPage(QWidget):
                     except RuntimeError:
                         pass  # Widget already deleted
 
-                result_vector = proc.get("result_file_shp") or proc.get("result_file")
+                result_vector = proc.get(
+                    "result_file_shp") or proc.get("result_file")
                 dataset = proc.get("dataset")
                 process_name = proc.get("name", "process")
 
                 if result_vector or dataset:
                     self._add_section_header("Downloads")
-                    self._add_download_buttons(result_vector, dataset, process_name)
+                    self._add_download_buttons(
+                        result_vector, dataset, process_name)
                     self._downloads_section_exists = True
 
             # Track current situation for next refresh
@@ -770,13 +785,16 @@ class ProcessesPage(QWidget):
         general_info_container.setSpacing(4)
 
         fees = proc.get("fees")
-        self._add_info_row_to_layout(general_info_container, "Fees", f"€{fees}" if fees is not None else "-")
+        self._add_info_row_to_layout(
+            general_info_container, "Fees", f"€{fees}" if fees is not None else "-")
 
         create_date = proc.get("create_date", "-") or "-"
-        self._add_info_row_to_layout(general_info_container, "Date", create_date)
+        self._add_info_row_to_layout(
+            general_info_container, "Date", create_date)
 
         area = proc.get("area")
-        self._add_info_row_to_layout(general_info_container, "Area", f"{area} km²" if area is not None else "-")
+        self._add_info_row_to_layout(
+            general_info_container, "Area", f"{area} km²" if area is not None else "-")
 
         self._detail_layout.addLayout(general_info_container)
         self._general_info_layout = general_info_container
@@ -810,7 +828,8 @@ class ProcessesPage(QWidget):
             self._downloads_section_exists = True
         elif not is_completed:
             status_msg = QLabel(f"Process is not yet completed ({label_text})")
-            status_msg.setStyleSheet("color: #888; font-size: 12px; font-style: italic; margin-top: 8px;")
+            status_msg.setStyleSheet(
+                "color: #888; font-size: 12px; font-style: italic; margin-top: 8px;")
             status_msg.setWordWrap(True)
             self._detail_layout.addWidget(status_msg)
             self._downloads_section_exists = False
@@ -844,13 +863,16 @@ class ProcessesPage(QWidget):
             if _layer_exists_in_qgis(result_layer_name):
                 vec_btn.setText("✓ Already Loaded")
                 vec_btn.setEnabled(False)
-                vec_btn.setStyleSheet(btn_style.format(bg="#10b981", hover="#10b981"))
+                vec_btn.setStyleSheet(btn_style.format(
+                    bg="#10b981", hover="#10b981"))
             else:
                 vec_btn.setText("Download Result (Shapefile)")
                 vec_btn.setCursor(Qt_PointingHandCursor)
-                vec_btn.setStyleSheet(btn_style.format(bg="#00856F", hover="#009980"))
+                vec_btn.setStyleSheet(btn_style.format(
+                    bg="#00856F", hover="#009980"))
                 vec_btn.clicked.connect(
-                    lambda _, url=result_vector, n=result_layer_name, btn=vec_btn: self._download_and_load(url, n, btn)
+                    lambda _, url=result_vector, n=result_layer_name, btn=vec_btn: self._download_and_load(
+                        url, n, btn)
                 )
             self._detail_layout.addWidget(vec_btn)
 
@@ -862,13 +884,16 @@ class ProcessesPage(QWidget):
             if _layer_exists_in_qgis(dataset_layer_name):
                 ds_btn.setText("✓ Already Loaded")
                 ds_btn.setEnabled(False)
-                ds_btn.setStyleSheet(btn_style.format(bg="#10b981", hover="#10b981"))
+                ds_btn.setStyleSheet(btn_style.format(
+                    bg="#10b981", hover="#10b981"))
             else:
                 ds_btn.setText("Download Dataset (GeoTIFF)")
                 ds_btn.setCursor(Qt_PointingHandCursor)
-                ds_btn.setStyleSheet(btn_style.format(bg="#1E293B", hover="#334155"))
+                ds_btn.setStyleSheet(btn_style.format(
+                    bg="#1E293B", hover="#334155"))
                 ds_btn.clicked.connect(
-                    lambda _, url=dataset, n=dataset_layer_name, btn=ds_btn: self._download_and_load(url, n, btn)
+                    lambda _, url=dataset, n=dataset_layer_name, btn=ds_btn: self._download_and_load(
+                        url, n, btn)
                 )
             self._detail_layout.addWidget(ds_btn)
 
@@ -891,12 +916,14 @@ class ProcessesPage(QWidget):
                     "border-radius: 4px; padding: 8px; font-weight: bold; }"
                 )
             except Exception as e:
-                QMessageBox.warning(self, "Load Error", f"Downloaded but failed to load:\n{e}")
+                QMessageBox.warning(self, "Load Error",
+                                    f"Downloaded but failed to load:\n{e}")
                 button.setEnabled(True)
                 button.setText("Retry Download")
 
         def on_err(msg):
-            QMessageBox.warning(self, "Download Error", f"Failed to download:\n{msg}")
+            QMessageBox.warning(self, "Download Error",
+                                f"Failed to download:\n{msg}")
             button.setEnabled(True)
             button.setText("Retry Download")
 
@@ -931,9 +958,11 @@ class ProcessesPage(QWidget):
         slug = self._current_project.get("slug", "")
         process_id = proc.get("id")
         thread = HideProcessThread(self.client, slug, process_id)
-        thread.finished.connect(lambda: self.load_processes(self._current_project))
+        thread.finished.connect(
+            lambda: self.load_processes(self._current_project))
         thread.error.connect(
-            lambda msg: QMessageBox.warning(self, "Error", f"Failed to hide process:\n{msg}")
+            lambda msg: QMessageBox.warning(
+                self, "Error", f"Failed to hide process:\n{msg}")
         )
         self._threads.append(thread)
         thread.start()

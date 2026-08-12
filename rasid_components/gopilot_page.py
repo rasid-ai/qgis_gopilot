@@ -78,16 +78,13 @@ class DownloadLayerThread(QThread):
 
 
 def _add_layer_to_qgis(filepath, layer_name):
-    """Add a downloaded layer to QGIS under the RASID group"""
+    """Add a downloaded layer to the top-level GoPilot group."""
     from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
 
     root = QgsProject.instance().layerTreeRoot()
-    rasid_group = root.findGroup("RASID")
-    if rasid_group is None:
-        rasid_group = root.insertGroup(0, "RASID")
-    target_group = rasid_group.findGroup("GoPilot")
+    target_group = root.findGroup("GoPilot")
     if target_group is None:
-        target_group = rasid_group.addGroup("GoPilot")
+        target_group = root.insertGroup(0, "GoPilot")
 
     ext = filepath.rsplit(".", 1)[-1].lower()
     if ext in ("tif", "tiff", "png", "jpg", "jpeg"):
