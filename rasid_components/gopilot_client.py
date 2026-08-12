@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any
 from .config import REQUEST_TIMEOUT
 from .logger import debug_print
 
+
 class GoPilotClient:
     """Client for GoPilot LLM chat API"""
 
@@ -28,7 +29,13 @@ class GoPilotClient:
 
     # ========== SESSION MANAGEMENT ==========
 
-    def create_session(self, title: str = "New Chat") -> Dict[str, Any]:
+    def create_session(
+        self,
+        title: str = "New Chat",
+        content: str = "",
+        input_metadata: Optional[Dict[str, Any]] = None,
+        files: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """
         Create a new LLM chat session.
 
@@ -38,13 +45,43 @@ class GoPilotClient:
         Returns:
             Session object with id, title, order_index, etc.
         """
-        response = self.session.post(
-            self.base_url + "sessions/",
-            json={"title": title},
-            timeout=REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()
-        return response.json()
+        import json
+
+        data = {"title": title, "content": content}
+        if input_metadata:
+            data["input_metadata"] = json.dumps(input_metadata)
+
+        files_to_upload = None
+        if files:
+            files_to_upload = [
+                ("files", open(file_path, "rb"))
+                for file_path in files
+            ]
+
+        try:
+            if files_to_upload:
+                response = self.session.post(
+                    self.base_url + "sessions/",
+                    data=data,
+                    files=files_to_upload,
+                    timeout=REQUEST_TIMEOUT,
+                )
+            else:
+                payload = {"title": title, "content": content}
+                if input_metadata:
+                    payload["input_metadata"] = input_metadata
+                response = self.session.post(
+                    self.base_url + "sessions/",
+                    json=payload,
+                    timeout=REQUEST_TIMEOUT,
+                )
+
+            response.raise_for_status()
+            return response.json()
+        finally:
+            if files_to_upload:
+                for _, file_handle in files_to_upload:
+                    file_handle.close()
 
     def get_session_history(self) -> Dict[str, Any]:
         """
@@ -131,7 +168,8 @@ class GoPilotClient:
         try:
             # Debug logging
             debug_print(f"[GoPilot] Sending message to session {session_id}")
-            debug_print(f"[GoPilot] URL: {self.base_url}sessions/{session_id}/send_message/")
+            debug_print(
+                f"[GoPilot] URL: {self.base_url}sessions/{session_id}/send_message/")
             debug_print(f"[GoPilot] Data: {data}")
 
             response = self.session.post(
@@ -142,7 +180,8 @@ class GoPilotClient:
             )
 
             debug_print(f"[GoPilot] Response status: {response.status_code}")
-            debug_print(f"[GoPilot] Response content type: {response.headers.get('content-type')}")
+            debug_print(
+                f"[GoPilot] Response content type: {response.headers.get('content-type')}")
             debug_print(f"[GoPilot] Response text: {response.text[:500]}")
 
             # Check for error status before parsing

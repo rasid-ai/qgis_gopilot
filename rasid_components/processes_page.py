@@ -166,6 +166,9 @@ def _add_layer_to_qgis(filepath, layer_name):
     rasid_group = root.findGroup("RASID")
     if rasid_group is None:
         rasid_group = root.insertGroup(0, "RASID")
+    target_group = rasid_group.findGroup("Solutions")
+    if target_group is None:
+        target_group = rasid_group.addGroup("Solutions")
 
     ext = filepath.rsplit(".", 1)[-1].lower()
     if ext in ("tif", "tiff"):
@@ -177,7 +180,7 @@ def _add_layer_to_qgis(filepath, layer_name):
         raise Exception(f"Could not load layer from {filepath}")
 
     QgsProject.instance().addMapLayer(layer, False)
-    rasid_group.addLayer(layer)
+    target_group.addLayer(layer)
 
 
 class ProcessesPage(QWidget):

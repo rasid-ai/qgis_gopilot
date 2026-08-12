@@ -57,6 +57,8 @@ import json
 from .logger import debug_print
 
 # ── Layer download and loading helpers ────────────────────────────────────────
+
+
 class DownloadLayerThread(QThread):
     """Thread for downloading layer files from URLs"""
     finished = pyqtSignal(str)  # file path
@@ -83,6 +85,9 @@ def _add_layer_to_qgis(filepath, layer_name):
     rasid_group = root.findGroup("RASID")
     if rasid_group is None:
         rasid_group = root.insertGroup(0, "RASID")
+    target_group = rasid_group.findGroup("GoPilot")
+    if target_group is None:
+        target_group = rasid_group.addGroup("GoPilot")
 
     ext = filepath.rsplit(".", 1)[-1].lower()
     if ext in ("tif", "tiff", "png", "jpg", "jpeg"):
@@ -94,7 +99,7 @@ def _add_layer_to_qgis(filepath, layer_name):
         raise Exception(f"Could not load layer from {filepath}")
 
     QgsProject.instance().addMapLayer(layer, False)
-    rasid_group.addLayer(layer)
+    target_group.addLayer(layer)
 
 
 def _extract_file_urls(text):
@@ -113,7 +118,8 @@ def _extract_file_urls(text):
         filename = url.split('/')[-1].split('?')[0]
         ext = filename.rsplit('.', 1)[-1].lower()
         is_image = ext in ('png', 'jpg', 'jpeg')
-        result.append((url, filename, ext, is_image))  # url includes full query params
+        # url includes full query params
+        result.append((url, filename, ext, is_image))
 
     # Also match plain URLs (not in markdown) for backward compatibility
     plain_pattern = r'(?<!\]\()https?://[^\s<>"]+\.(?:tif|tiff|png|jpg|jpeg|shp|geojson|gpkg|zip)(?:\?[^\s<>"]*)?'
@@ -235,7 +241,9 @@ def create_trash_icon(size=24, color="#e74c3c"):
     pixmap.fill(Qt_transparent)
     p = QPainter(pixmap)
     p.setRenderHint(QPainter_Antialiasing)
-    pen = QPen(QColor(color)); pen.setWidth(2); p.setPen(pen)
+    pen = QPen(QColor(color))
+    pen.setWidth(2)
+    p.setPen(pen)
     bt, bb = int(size * 0.35), int(size * 0.85)
     bl, br = int(size * 0.25), int(size * 0.75)
     p.drawRect(bl, bt, br - bl, bb - bt)
@@ -245,7 +253,8 @@ def create_trash_icon(size=24, color="#e74c3c"):
     p.drawLine(int(size * 0.4), lid, int(size * 0.4), hy)
     p.drawLine(int(size * 0.6), lid, int(size * 0.6), hy)
     p.drawLine(int(size * 0.4), hy, int(size * 0.6), hy)
-    p.drawLine(int(size * 0.5), int(size * 0.45), int(size * 0.5), int(size * 0.75))
+    p.drawLine(int(size * 0.5), int(size * 0.45),
+               int(size * 0.5), int(size * 0.75))
     p.end()
     return QIcon(pixmap)
 
@@ -268,51 +277,68 @@ class SendMessageThread(QThread):
         import time
         try:
             if not self.client.gopilot:
-                raise Exception("GoPilot client not initialized. Check your API key.")
+                raise Exception(
+                    "GoPilot client not initialized. Check your API key.")
+            debug_print(
+                f"[GoPilot] Starting SendMessageThread with message: {self.message[:100]}...")
 
-            if not self.session_id:
-                self.progress.emit("Creating new chat session...")
-                session = self.client.gopilot.create_session(title="New Chat")
-                if isinstance(session, dict):
-                    self.session_id = session.get("id")
-                else:
-                    raise Exception(f"Invalid session response: {type(session)}")
-
-            self.progress.emit("Sending message to AI...")
-            from .logger import debug_print
-            debug_print(f"[GoPilot] Sending message: {self.message[:100]}...")
-            debug_print(f"[GoPilot] Session ID: {self.session_id}")
-
-            # If GeoJSON is attached, save it to a temporary file
+            # If GeoJSON is attached, save it to a temporary file before either
+            # creating a session or sending to an existing one.
             files_to_upload = None
             if self.geojson_data:
                 import tempfile
                 import os
 
-                # Create temp GeoJSON file
                 temp_dir = tempfile.gettempdir()
-                geojson_path = os.path.join(temp_dir, "attached_geometry.geojson")
+                geojson_path = os.path.join(
+                    temp_dir, "attached_geometry.geojson")
 
                 with open(geojson_path, 'w', encoding='utf-8') as f:
                     json.dump(self.geojson_data, f, indent=2)
 
                 files_to_upload = [geojson_path]
-                debug_print(f"[GoPilot] Attaching GeoJSON file: {geojson_path}")
+                debug_print(
+                    f"[GoPilot] Attaching GeoJSON file: {geojson_path}")
 
-            result = self.client.gopilot.send_message(
-                session_id=self.session_id,
-                content=self.message,
-                input_metadata=self.input_metadata,
-                files=files_to_upload
-            )
+            if not self.session_id:
+                self.progress.emit("Creating new chat session...")
+                result = self.client.gopilot.create_session(
+                    title="New Chat",
+                    content=self.message,
+                    input_metadata=self.input_metadata,
+                    files=files_to_upload,
+                )
+                debug_print(f"[GoPilot] Create-session response: {result}")
+                if not isinstance(result, dict):
+                    raise Exception(
+                        f"Invalid session response: {type(result)}")
 
-            debug_print(f"[GoPilot] Send message result: {result}")
+                # The create endpoint returns `session_id` and already queues
+                # the first message. Do not send that message a second time.
+                self.session_id = result.get("session_id") or result.get("id")
+                if not self.session_id:
+                    raise Exception(
+                        f"Create-session response has no session ID: {result}")
+                debug_print(f"[GoPilot] Session ID: {self.session_id}")
+            else:
+                self.progress.emit("Sending message to AI...")
+                debug_print(
+                    f"[GoPilot] Sending message to session {self.session_id}: "
+                    f"{self.message[:100]}...")
+                result = self.client.gopilot.send_message(
+                    session_id=self.session_id,
+                    content=self.message,
+                    input_metadata=self.input_metadata,
+                    files=files_to_upload
+                )
+                debug_print(f"[GoPilot] Send-message response: {result}")
 
             if not isinstance(result, dict):
                 raise Exception(f"Unexpected response type: {type(result)}")
 
             task_info = result.get("task", {})
-            task_id = task_info.get("task_id") if isinstance(task_info, dict) else None
+            task_id = task_info.get("task_id") if isinstance(
+                task_info, dict) else None
             if not task_id:
                 raise Exception("No task_id in response")
 
@@ -345,11 +371,17 @@ class SendMessageThread(QThread):
                 messages = self.client.gopilot.get_messages(self.session_id)
                 if messages:
                     for msg in reversed(messages):
-                        if msg.get("role") == "assistant":
+                        is_assistant = (
+                            msg.get("role") == "assistant"
+                            or msg.get("is_user") is False
+                        )
+                        if is_assistant:
                             message_content = msg.get("content", "")
-                            break
+                            if message_content:
+                                break
                 if not message_content:
-                    raise Exception("AI response timeout. Check the chat history.")
+                    raise Exception(
+                        "AI response timeout. Check the chat history.")
 
             self.finished.emit({
                 "session_id": self.session_id,
@@ -372,7 +404,8 @@ class SendMessageThread(QThread):
                         error_msg = f"{error_msg}\nResponse: {e.response.text[:200]}"
                     except Exception as detail_exc:
                         # Response body was unreadable; keep the base error message.
-                        debug_print(f"[GoPilot] Could not read error response body: {detail_exc}")
+                        debug_print(
+                            f"[GoPilot] Could not read error response body: {detail_exc}")
 
             self.error.emit(error_msg)
 
@@ -415,7 +448,8 @@ class FetchMessagesThread(QThread):
         try:
             if not self.client.gopilot:
                 raise Exception("GoPilot client not initialized")
-            self.finished.emit(self.client.gopilot.get_messages(self.session_id))
+            self.finished.emit(
+                self.client.gopilot.get_messages(self.session_id))
         except Exception as e:
             self.error.emit(str(e))
 
@@ -584,20 +618,23 @@ class MessageBubble(QFrame):
                 color: {theme_utils.get_secondary_text_color()};
             }}
         """)
-        btn.clicked.connect(lambda: self._download_and_load(url, filename, btn))
+        btn.clicked.connect(
+            lambda: self._download_and_load(url, filename, btn))
         self._download_layout.addWidget(btn)
 
     def _download_and_load(self, url, filename, button):
         """Download file and load it into QGIS"""
         if not self.client:
-            QMessageBox.warning(self, "Error", "Cannot download: client not available")
+            QMessageBox.warning(
+                self, "Error", "Cannot download: client not available")
             return
 
         button.setText("⏳ Downloading...")
         button.setEnabled(False)
 
         thread = DownloadLayerThread(self.client, url)
-        thread.finished.connect(lambda path: self._on_download_complete(path, filename, button))
+        thread.finished.connect(
+            lambda path: self._on_download_complete(path, filename, button))
         thread.error.connect(lambda msg: self._on_download_error(msg, button))
         self._download_threads.append(thread)
         thread.start()
@@ -605,18 +642,21 @@ class MessageBubble(QFrame):
     def _on_download_complete(self, filepath, filename, button):
         """Handle successful download"""
         try:
-            layer_name = filename.rsplit('.', 1)[0]  # Remove extension for layer name
+            # Remove extension for layer name
+            layer_name = filename.rsplit('.', 1)[0]
             _add_layer_to_qgis(filepath, layer_name)
             button.setText(f"✅ Loaded: {filename}")
             button.setEnabled(False)
         except Exception as e:
-            QMessageBox.warning(self, "Load Error", f"Downloaded but failed to load:\n{e}")
+            QMessageBox.warning(self, "Load Error",
+                                f"Downloaded but failed to load:\n{e}")
             button.setText(f"⚠️ Load failed: {filename}")
             button.setEnabled(True)
 
     def _on_download_error(self, error_msg, button):
         """Handle download error"""
-        QMessageBox.warning(self, "Download Error", f"Failed to download:\n{error_msg}")
+        QMessageBox.warning(self, "Download Error",
+                            f"Failed to download:\n{error_msg}")
         button.setText("🔄 Retry Download")
         button.setEnabled(True)
 
@@ -660,7 +700,8 @@ class MessageBubble(QFrame):
                 border-color:{theme_utils.BRAND_PRIMARY};
             }}
         """)
-        download_btn.clicked.connect(partial(self._save_image_locally, url, filename))
+        download_btn.clicked.connect(
+            partial(self._save_image_locally, url, filename))
         self._download_layout.addWidget(download_btn)
 
         # Download the preview. Use QUrl.fromEncoded so an already
@@ -704,11 +745,13 @@ class MessageBubble(QFrame):
                     # Scale to fit bubble width
                     max_width = self.BUBBLE_MAX_WIDTH - self._BODY_PAD - 16
                     if pixmap.width() > max_width:
-                        pixmap = pixmap.scaledToWidth(max_width, Qt_SmoothTransformation)
+                        pixmap = pixmap.scaledToWidth(
+                            max_width, Qt_SmoothTransformation)
 
                     # Limit height to 400px
                     if pixmap.height() > 400:
-                        pixmap = pixmap.scaledToHeight(400, Qt_SmoothTransformation)
+                        pixmap = pixmap.scaledToHeight(
+                            400, Qt_SmoothTransformation)
 
                     img_label.setPixmap(pixmap)
                     img_label.setText("")
@@ -732,7 +775,8 @@ class MessageBubble(QFrame):
         import os
 
         # Ask user where to save
-        default_path = os.path.join(os.path.expanduser("~"), "Downloads", filename)
+        default_path = os.path.join(
+            os.path.expanduser("~"), "Downloads", filename)
         save_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save Image",
@@ -747,15 +791,18 @@ class MessageBubble(QFrame):
         try:
             thread = DownloadLayerThread(self.client, url)
             thread.finished.connect(
-                lambda temp_path: self._on_image_saved(temp_path, save_path, filename)
+                lambda temp_path: self._on_image_saved(
+                    temp_path, save_path, filename)
             )
             thread.error.connect(
-                lambda msg: QMessageBox.warning(self, "Save Error", f"Failed to save image:\n{msg}")
+                lambda msg: QMessageBox.warning(
+                    self, "Save Error", f"Failed to save image:\n{msg}")
             )
             self._download_threads.append(thread)
             thread.start()
         except Exception as e:
-            QMessageBox.warning(self, "Save Error", f"Failed to save image:\n{str(e)}")
+            QMessageBox.warning(self, "Save Error",
+                                f"Failed to save image:\n{str(e)}")
 
     def _on_image_saved(self, temp_path, save_path, filename):
         """Handle image saved to disk"""
@@ -764,7 +811,8 @@ class MessageBubble(QFrame):
             shutil.move(temp_path, save_path)
             # Note: Can't access parent page's status_label, so just show message box on error
         except Exception as e:
-            QMessageBox.warning(self, "Save Error", f"Failed to move image:\n{str(e)}")
+            QMessageBox.warning(self, "Save Error",
+                                f"Failed to move image:\n{str(e)}")
 
 
 # ══════════════════════════════ Main page ════════════════════════════════════
@@ -966,7 +1014,8 @@ class GoPilotPage(QWidget):
         self.btn_send = QPushButton("Send")
         self.btn_send.setCursor(Qt_PointingHandCursor)
         self.btn_send.setFixedWidth(100)
-        self.btn_send.setDefault(True)  # Make this the default button for Enter key
+        # Make this the default button for Enter key
+        self.btn_send.setDefault(True)
         self.btn_send.setAutoDefault(True)
         self.btn_send.setStyleSheet(f"""
             QPushButton {{
@@ -1027,11 +1076,13 @@ class GoPilotPage(QWidget):
 
     def add_message(self, text, is_user=True, timestamp=None, has_attachment=False):
         role = "user" if is_user else "ai"
-        bubble = MessageBubble(text, role=role, timestamp=timestamp, client=self.client, has_attachment=has_attachment)
+        bubble = MessageBubble(text, role=role, timestamp=timestamp,
+                               client=self.client, has_attachment=has_attachment)
         return self._add_bubble(bubble, "right" if is_user else "left")
 
     def _add_system_message(self, text):
-        bubble = MessageBubble(text, role="system", with_time=False, client=self.client)
+        bubble = MessageBubble(text, role="system",
+                               with_time=False, client=self.client)
         return self._add_bubble(bubble, "center")
 
     def _show_greeting(self):
@@ -1082,7 +1133,8 @@ class GoPilotPage(QWidget):
 
     # ── thinking indicator ────────────────────────────────────────────────────
     def _show_thinking(self):
-        self._thinking_row = self.add_message("\U0001F914 Thinking...", is_user=False)
+        self._thinking_row = self.add_message(
+            "\U0001F914 Thinking...", is_user=False)
 
     def _hide_thinking(self):
         if self._thinking_row is not None:
@@ -1205,11 +1257,13 @@ class GoPilotPage(QWidget):
             info.setSpacing(2)
             tl = QLabel(chat["title"])
             tl.setObjectName("chat_title")
-            tl.setStyleSheet("font-weight:bold; font-size:12px; border:none; background:transparent;")
+            tl.setStyleSheet(
+                "font-weight:bold; font-size:12px; border:none; background:transparent;")
             info.addWidget(tl)
             tm = QLabel(chat["timestamp"])
             tm.setObjectName("chat_time")
-            tm.setStyleSheet("font-size:10px; color:#888; border:none; background:transparent;")
+            tm.setStyleSheet(
+                "font-size:10px; color:#888; border:none; background:transparent;")
             info.addWidget(tm)
             il.addLayout(info, stretch=1)
 
@@ -1218,7 +1272,8 @@ class GoPilotPage(QWidget):
             del_btn.setFixedSize(24, 24)
             del_btn.setCursor(Qt_PointingHandCursor)
             del_btn.setToolTip("Delete chat")
-            del_btn.setAutoDefault(False)  # Prevent Enter key from triggering delete
+            # Prevent Enter key from triggering delete
+            del_btn.setAutoDefault(False)
             del_btn.setDefault(False)
             del_btn.setStyleSheet(
                 f"QPushButton {{ background:{theme_utils.get_card_bg()}; "
@@ -1235,9 +1290,11 @@ class GoPilotPage(QWidget):
             item.setSizeHint(item_widget.sizeHint())
             self.chat_list.addItem(item)
             self.chat_list.setItemWidget(item, item_widget)
-            item_widget.mousePressEvent = lambda e, itm=item: self._on_chat_item_clicked(itm)
+            item_widget.mousePressEvent = lambda e, itm=item: self._on_chat_item_clicked(
+                itm)
 
-        self.chat_list.itemSelectionChanged.connect(self._update_chat_list_colors)
+        self.chat_list.itemSelectionChanged.connect(
+            self._update_chat_list_colors)
 
     def _on_chats_error(self, error_msg):
         debug_print(f"[GoPilot] Failed to load chat history: {error_msg}")
@@ -1257,14 +1314,18 @@ class GoPilotPage(QWidget):
             tm = widget.findChild(QLabel, "chat_time")
             if item.isSelected():
                 if tl:
-                    tl.setStyleSheet("font-weight:bold; font-size:12px; border:none; background:transparent; color:white;")
+                    tl.setStyleSheet(
+                        "font-weight:bold; font-size:12px; border:none; background:transparent; color:white;")
                 if tm:
-                    tm.setStyleSheet("font-size:10px; border:none; background:transparent; color:rgba(255,255,255,0.8);")
+                    tm.setStyleSheet(
+                        "font-size:10px; border:none; background:transparent; color:rgba(255,255,255,0.8);")
             else:
                 if tl:
-                    tl.setStyleSheet(f"font-weight:bold; font-size:12px; border:none; background:transparent; color:{text_color};")
+                    tl.setStyleSheet(
+                        f"font-weight:bold; font-size:12px; border:none; background:transparent; color:{text_color};")
                 if tm:
-                    tm.setStyleSheet("font-size:10px; color:#888; border:none; background:transparent;")
+                    tm.setStyleSheet(
+                        "font-size:10px; color:#888; border:none; background:transparent;")
 
     def _on_delete_chat(self, chat):
         chat_title = chat.get("title", "this chat")
@@ -1281,7 +1342,8 @@ class GoPilotPage(QWidget):
         thread = DeleteChatThread(self.client, chat_id)
         thread.finished.connect(lambda: self._on_chat_deleted(chat_id))
         thread.error.connect(
-            lambda msg: QMessageBox.warning(self, "Error", f"Failed to delete chat:\n{msg}")
+            lambda msg: QMessageBox.warning(
+                self, "Error", f"Failed to delete chat:\n{msg}")
         )
         self._threads.append(thread)
         thread.start()
@@ -1331,7 +1393,8 @@ class GoPilotPage(QWidget):
             if system_date:
                 try:
                     # Parse ISO timestamp with QDateTime
-                    dt = QDateTime.fromString(system_date[:19], "yyyy-MM-ddTHH:mm:ss")
+                    dt = QDateTime.fromString(
+                        system_date[:19], "yyyy-MM-ddTHH:mm:ss")
                     if dt.isValid():
                         # Format as "MMM d HH:mm" (e.g., "Jun 18 18:40")
                         timestamp = dt.toString("MMM d HH:mm")
@@ -1339,7 +1402,8 @@ class GoPilotPage(QWidget):
                     timestamp = None
 
             if is_user_flag is not None:
-                self.add_message(content, is_user=is_user_flag, timestamp=timestamp)
+                self.add_message(content, is_user=is_user_flag,
+                                 timestamp=timestamp)
             elif role == "assistant":
                 self.add_message(content, is_user=False, timestamp=timestamp)
             else:
@@ -1349,7 +1413,8 @@ class GoPilotPage(QWidget):
         )
 
     def _on_messages_error(self, error_msg):
-        self._add_system_message(f"\u26A0\uFE0F Failed to load messages: {error_msg}")
+        self._add_system_message(
+            f"\u26A0\uFE0F Failed to load messages: {error_msg}")
         self.status_label.setText("Error loading chat")
 
     def start_new_chat(self):
@@ -1359,6 +1424,7 @@ class GoPilotPage(QWidget):
         self.status_label.setText("New Chat")
         self.message_input.setFocus()
     # ── geometry input (draw & layer picker) ──────────────────────────────────
+
     def _start_draw_geometry(self):
         """Start drawing geometry on the map"""
         if not self.iface:
@@ -1415,7 +1481,8 @@ class GoPilotPage(QWidget):
                 }}
             """)
             self.status_label.setText("Geometry attached ✓")
-            self.message_input.setPlaceholderText("Geometry attached - Type your message...")
+            self.message_input.setPlaceholderText(
+                "Geometry attached - Type your message...")
         elif source == 'layer':
             # Highlight layer button
             self.btn_layer.setStyleSheet(f"""
@@ -1426,7 +1493,8 @@ class GoPilotPage(QWidget):
                 }}
             """)
             self.status_label.setText(f"Layer '{name}' attached ✓")
-            self.message_input.setPlaceholderText(f"Layer '{name}' attached - Type your message...")
+            self.message_input.setPlaceholderText(
+                f"Layer '{name}' attached - Type your message...")
 
     def _clear_attached_geometry(self):
         """Clear attached geometry and reset UI"""
@@ -1459,7 +1527,6 @@ class GoPilotPage(QWidget):
                 }}
             """)
 
-
     def closeEvent(self, event):
         """Handle widget close event - clean up resources"""
         self.cleanup()
@@ -1475,15 +1542,16 @@ class GoPilotPage(QWidget):
                     thread.wait(1000)  # Wait max 1 second
                 except Exception as exc:
                     # Thread may already be gone during shutdown; log and continue.
-                    debug_print(f"[GoPilot] Error stopping thread during cleanup: {exc}")
+                    debug_print(
+                        f"[GoPilot] Error stopping thread during cleanup: {exc}")
 
         # Clean up geometry manager
         if hasattr(self, "geo_manager") and self.geo_manager:
             try:
                 self.geo_manager.cleanup()
             except Exception as exc:
-                debug_print(f"[GoPilot] Error cleaning up geometry manager: {exc}")
+                debug_print(
+                    f"[GoPilot] Error cleaning up geometry manager: {exc}")
 
         # Clear thread list
         self._threads.clear()
-
