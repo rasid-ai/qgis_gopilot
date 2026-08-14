@@ -33,7 +33,9 @@ finish_ai_stream(). The current SendMessageThread uses the simple
 transport can emit partial chunks.
 """
 
+import os
 import re
+import tempfile
 from qgis.PyQt.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QScrollArea,
     QLabel, QFrame, QListWidget, QSplitter, QListWidgetItem, QMessageBox,
@@ -47,7 +49,8 @@ from .compat import (
     Qt_AlignTop, Qt_AlignRight, Qt_AlignLeft, Qt_AlignCenter, Qt_UserRole,
     Qt_PointingHandCursor, Qt_Horizontal, QFrame_NoFrame, QFrame_StyledPanel,
     Qt_transparent, QPainter_Antialiasing, Qt_SmoothTransformation,
-    QMessageBox_Question, QMessageBox_Yes, QMessageBox_No, exec_dialog,
+    QMessageBox_Question, QMessageBox_Warning, QMessageBox_Yes,
+    QMessageBox_No, QMessageBox_Ok, exec_dialog,
     QSizePolicy_Expanding,
 )
 from . import theme_utils
@@ -64,14 +67,21 @@ class DownloadLayerThread(QThread):
     finished = pyqtSignal(str)  # file path
     error = pyqtSignal(str)
 
-    def __init__(self, client, url):
+    def __init__(self, client, url, filename=None):
         super().__init__()
         self.client = client
         self.url = url
+        self.filename = filename
 
     def run(self):
         try:
-            path = self.client.download_file(self.url)
+            path = self.client.download_file(
+                self.url, tempfile.mkdtemp(prefix="rasid_download_"))
+            if self.filename:
+                extension = os.path.splitext(self.filename)[1]
+                if extension and not path.lower().endswith(extension.lower()):
+                    os.replace(path, path + extension)
+                    path += extension
             self.finished.emit(path)
         except Exception as e:
             self.error.emit(str(e))
@@ -104,18 +114,24 @@ def _extract_file_urls(text):
 
     Returns list of tuples: (url, filename, extension, is_image)
     """
-    # Match markdown links: [text](url) and extract the URL part
-    # This handles: [filename.tif](https://...?query=params)
-    markdown_pattern = r'\[([^\]]+)\]\((https?://[^\s\)]+\.(?:tif|tiff|png|jpg|jpeg|shp|geojson|gpkg|zip)[^\)]*)\)'
+    # Match file links even when the download URL itself has no extension.
+    markdown_pattern = r'\[([^\]]+)\]\(<?((?:https?://|/)[^\s\)>]+)>?\)'
     markdown_matches = re.findall(markdown_pattern, text, re.IGNORECASE)
 
     result = []
-    for _, url in markdown_matches:
-        # Extract filename from URL path (before query params)
-        filename = url.split('/')[-1].split('?')[0]
+    for label, url in markdown_matches:
+        url_filename = url.split('/')[-1].split('?')[0]
+        label_match = re.search(
+            r'([^/\\]+\.(?:tif|tiff|png|jpg|jpeg|shp|geojson|gpkg|zip))$',
+            label.strip(), re.IGNORECASE)
+        filename = url_filename if re.search(
+            r'\.(?:tif|tiff|png|jpg|jpeg|shp|geojson|gpkg|zip)$',
+            url_filename, re.IGNORECASE) else (
+                label_match.group(1) if label_match else None)
+        if not filename:
+            continue
         ext = filename.rsplit('.', 1)[-1].lower()
         is_image = ext in ('png', 'jpg', 'jpeg')
-        # url includes full query params
         result.append((url, filename, ext, is_image))
 
     # Also match plain URLs (not in markdown) for backward compatibility
@@ -562,13 +578,8 @@ class MessageBubble(QFrame):
     def set_content(self, text):
         """Replace the body text. Safe to call repeatedly while streaming.
 
-        The full message is rendered as-is, so any file links stay visible and
-        clickable in the text. Then one control per detected file link is
-        appended to ``_download_layout``, which sits at the very end of the
-        bubble (just above the timestamp). Because the controls always go into
-        that trailing container — regardless of where the link appears in the
-        text — the download/install buttons are always grouped at the end of
-        the message.
+        File links are replaced by one control per file in ``_download_layout``
+        at the end of the bubble, just above the timestamp.
         """
         # Clear existing download buttons / inline images
         while self._download_layout.count():
@@ -576,15 +587,24 @@ class MessageBubble(QFrame):
             if item.widget():
                 item.widget().deleteLater()
 
-        # Render the full text WITH links intact (do not strip them out).
+        files = _extract_file_urls(text)
+        display_text = text
+        for url, _, _, _ in files:
+            display_text = re.sub(
+                r'\[[^\]]+\]\(<?' + re.escape(url) + r'>?\)', '',
+                display_text)
+            display_text = display_text.replace(url, '')
+        display_text = re.sub(
+            r'(?m)^[ \t]*[-*+][ \t]*$', '', display_text)
+
         self._body.setText(
-            _render_body_html(text, dark_text=self._dark_text)
+            _render_body_html(display_text, dark_text=self._dark_text)
         )
 
         # Append one control per detected file link, at the end of the bubble.
         # (Only for AI messages that have a client capable of downloading.)
         if self.role == "ai" and self.client:
-            for url, filename, ext, is_image in _extract_file_urls(text):
+            for url, filename, ext, is_image in files:
                 # Images render as an inline preview (with a save button);
                 # every other file type gets a download/install button.
                 if is_image:
@@ -629,7 +649,7 @@ class MessageBubble(QFrame):
         button.setText("⏳ Downloading...")
         button.setEnabled(False)
 
-        thread = DownloadLayerThread(self.client, url)
+        thread = DownloadLayerThread(self.client, url, filename)
         thread.finished.connect(
             lambda path: self._on_download_complete(path, filename, button))
         thread.error.connect(lambda msg: self._on_download_error(msg, button))
@@ -652,8 +672,14 @@ class MessageBubble(QFrame):
 
     def _on_download_error(self, error_msg, button):
         """Handle download error"""
-        QMessageBox.warning(self, "Download Error",
-                            f"Failed to download:\n{error_msg}")
+        box = QMessageBox(self)
+        box.setWindowTitle("Download Error")
+        box.setIcon(QMessageBox_Warning)
+        box.setText(f"Failed to download:\n{error_msg}")
+        box.setStandardButtons(QMessageBox_Ok)
+        box.setStyleSheet(
+            f"QLabel, QPushButton {{ color: {theme_utils.get_text_color()}; }}")
+        exec_dialog(box)
         button.setText("🔄 Retry Download")
         button.setEnabled(True)
 
