@@ -159,7 +159,7 @@ class RasidClient:
         try:
             self.get_profile()
             return True
-        except:
+        except Exception:
             return False
 
     def get_auth_method(self):

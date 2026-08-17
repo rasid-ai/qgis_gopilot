@@ -190,7 +190,7 @@ class GoPilotClient:
                 try:
                     error_json = response.json()
                     error_detail = f"{error_detail}: {error_json}"
-                except:
+                except ValueError:
                     error_detail = f"{error_detail}: {response.text[:200]}"
                 debug_print(f"[GoPilot] Server error: {error_detail}")
                 raise Exception(error_detail)
@@ -206,7 +206,7 @@ class GoPilotClient:
             try:
                 error_json = e.response.json()
                 error_msg = f"{error_msg}: {error_json}"
-            except:
+            except ValueError:
                 error_msg = f"{error_msg}: {e.response.text[:200]}"
             debug_print(f"[GoPilot] HTTP Error in send_message: {error_msg}")
             raise Exception(error_msg)
