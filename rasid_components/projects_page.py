@@ -249,7 +249,7 @@ class ProjectsPage(QWidget):
                 from datetime import datetime
                 date_obj = datetime.fromisoformat(modified_at.replace('Z', '+00:00'))
                 date_str = date_obj.strftime("%m/%d/%Y")
-            except:
+            except ValueError:
                 date_str = modified_at.split('T')[0] if 'T' in modified_at else modified_at
 
             date_lbl = QLabel(date_str)

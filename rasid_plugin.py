@@ -25,7 +25,7 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
-from .resources import *
+from . import resources  
 # NOTE: RasidPluginDialog is imported lazily inside _show_main_dialog(), not
 # here. Its import chain pulls in `markdown` (via gopilot_page), which is a
 # bundled-in-venv dependency that only becomes importable AFTER

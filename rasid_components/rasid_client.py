@@ -2,7 +2,7 @@
 import os
 import tempfile
 import requests
-from .config import API_BASE_URL, REQUEST_TIMEOUT, GOPILOT_LLM_BASE_URL
+from .config import API_BASE_URL, API_HOST, REQUEST_TIMEOUT, GOPILOT_LLM_BASE_URL
 from .gopilot_client import GoPilotClient
 from .logger import debug_print
 
@@ -159,7 +159,7 @@ class RasidClient:
         try:
             self.get_profile()
             return True
-        except:
+        except Exception:
             return False
 
     def get_auth_method(self):
@@ -434,7 +434,7 @@ class RasidClient:
         if not url:
             raise Exception("No file URL provided")
         if url.startswith("/"):
-            url = self.base_url.rstrip("/api/") + url  # Handle base URL correctly
+            url = API_HOST + url
 
         # Check if this is an S3 URL or other external URL (not from our API)
         # S3 URLs and external URLs should be downloaded without auth headers
@@ -442,7 +442,7 @@ class RasidClient:
             url.startswith("https://s3.") or
             url.startswith("https://") and ".s3." in url or
             url.startswith("https://") and ".amazonaws.com" in url or
-            (url.startswith("https://") and not url.startswith(self.base_url))
+            (url.startswith("https://") and not url.startswith(API_HOST + "/"))
         )
 
         if is_external_url:
